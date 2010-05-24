@@ -1,0 +1,14 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2010 (ita)
+
+def configure(conf):
+	pass
+
+def build(bld):
+	# 1. A simple c++ program
+	bld(
+		features = 'cxx cprogram',
+		source = 'fastproxy.cpp',
+		target = 'fastproxy',
+		defines = '')
