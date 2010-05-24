@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -24,25 +20,141 @@ typedef posix::stream_descriptor bsd;
 
 const std::size_t PIPE_SIZE = 65536;
 
-typedef boost::function<void (const boost::system::error_code&)> CompletionHandler;
+typedef boost::function<void(const boost::system::error_code&)> CompletionHandler;
+
+class session;
+
+class channel : public boost::noncopyable
+{
+public:
+    channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session) :
+        input(input), output(output), waiting_input(false), waiting_output(false), parent_session(parent_session)
+    {
+        if (pipe2(pipe, O_NONBLOCK) == -1)
+        {
+            perror("pipe2");
+            throw boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t> (errno));
+        }
+    }
+
+    void start()
+    {
+    	start_waiting_input();
+        start_waiting_output();
+    }
+
+    void start_waiting_input()
+    {
+        std::cerr << "start_waiting_input" << std::endl;
+        waiting_input = true;
+        input.async_read_some(null_buffers(), boost::bind(&channel::finished_waiting_input, this, placeholders::error));
+    }
+
+    void start_waiting_output()
+    {
+        std::cerr << "start_waiting_output" << std::endl;
+        waiting_output = true;
+        output.async_write_some(null_buffers(), boost::bind(&channel::finished_waiting_output, this, placeholders::error));
+    }
+
+    void finished_waiting_input(const boost::system::error_code& ec)
+    {
+    	waiting_input = false;
+        std::cerr << "finished_waiting_input ec: " << ec << std::endl;
+        if (ec)
+            return finish(ec);
+
+        splice_from_input();
+    }
+
+    void finished_waiting_output(const boost::system::error_code& ec)
+    {
+        waiting_output = false;
+        std::cerr << "finished_waiting_request_output ec: " << ec << std::endl;
+        if (ec)
+            return finish(ec);
+
+        splice_to_output();
+    }
+
+    void splice_from_input()
+    {
+        if (input.available() == 0)
+        {
+            perror("requester connection closed");
+            return finish(boost::system::errc::make_error_code(boost::system::errc::not_connected));
+        }
+
+        long spliced;
+        boost::system::error_code ec;
+        splice(input.native(), pipe[1], spliced, ec);
+        pipe_size += spliced;
+        if (ec)
+            can_wait_input = false;
+
+        finished_splice();
+    }
+
+    void splice_to_output()
+    {
+        long spliced;
+        boost::system::error_code splice_ec;
+        splice(pipe[0], output.native(), spliced, splice_ec);
+        pipe_size -= spliced;
+        if (ec)
+            can_wait_input = false;
+
+        finished_splice();
+    }
+
+    void finished_splice()
+    {
+    	assert(!waiting_input || !waiting_output || !"wtf?!?");
+
+        if (pipe_size > 0 && !waiting_input)
+            start_waiting_output();
+
+        if (pipe_size < PIPE_SIZE && !waiting_output)
+            start_waiting_input();
+    }
+
+    void finish(const boost::system::error_code& ec)
+    {
+        parent_session->finish(ec);
+    }
+
+protected:
+    void splice(int from, int to, long& spliced, boost::system::error_code& ec)
+    {
+        spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK);
+        if (spliced == -1)
+        {
+            perror("splice");
+            ec = boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t> (errno));
+            spliced = 0;
+
+            if (ec == boost::system::errc::resource_unavailable_try_again)
+            	ec.clear();
+        }
+        std::cerr << "spliced " << spliced << " bytes" << std::endl;
+    }
+
+private:
+    ip::tcp::socket& input;
+    ip::tcp::socket& output;
+    int pipe[2];
+    std::size_t pipe_size;
+    bool waiting_input;
+    bool waiting_output;
+    session* parent_session;
+};
 
 class session : public boost::noncopyable
 {
 public:
     session(io_service& io) :
-        requester(io), responser(io), resolver(io)
+        requester(io), responder(io), resolver(io), request_channel(requester, responder, this), response_channel(responder, requester, this)
     {
-        create_pipe(request_pipe);
-        create_pipe(response_pipe);
-    }
-
-    void create_pipe(int(&pipe)[2])
-    {
-        if (pipe2(pipe, O_NONBLOCK) == -1)
-        {
-            perror("pipe2");
-            throw boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t>(errno));
-        }
     }
 
     ip::tcp::socket& socket()
@@ -70,8 +182,8 @@ public:
 
     void start_receive_header()
     {
-        requester.async_receive(buffer(header), requester.message_peek, boost::bind(&session::finished_receive_header, this, placeholders::error,
-                placeholders::bytes_transferred));
+        requester.async_receive(buffer(header), requester.message_peek, boost::bind(&session::finished_receive_header, this,
+                placeholders::error, placeholders::bytes_transferred));
     }
 
     void finished_receive_header(const boost::system::error_code& ec, std::size_t bytes_transferred)
@@ -99,156 +211,15 @@ public:
     void start_connecting_to_peer(ip::tcp::resolver::iterator iterator)
     {
         std::cerr << "connecting to " << iterator->endpoint() << std::endl;
-        responser.async_connect(iterator->endpoint(), boost::bind(&session::finished_connecting_to_peer, this, placeholders::error));
+        responder.async_connect(iterator->endpoint(), boost::bind(&session::finished_connecting_to_peer, this, placeholders::error));
     }
 
     void finished_connecting_to_peer(const boost::system::error_code& ec)
     {
         if (ec)
             return finish(ec);
-        start_waiting_request_input();
-        start_waiting_response_input();
-    }
-
-    void start_waiting_request_input()
-    {
-        std::cerr << "start_waiting_request_input" << std::endl;
-        requester.async_read_some(null_buffers(), boost::bind(&session::finished_waiting_request_input, this, placeholders::error));
-    }
-
-    void start_waiting_request_output()
-    {
-        std::cerr << "start_waiting_request_output" << std::endl;
-        responser.async_write_some(null_buffers(), boost::bind(&session::finished_waiting_request_output, this, placeholders::error));
-    }
-
-    void finished_waiting_request_input(const boost::system::error_code& ec)
-    {
-        std::cerr << "finished_waiting_request_input ec: " << ec << std::endl;
-        if (ec)
-            return finish(ec);
-
-        splice_request();
-    }
-
-    void splice_request()
-    {
-        if (requester.available() == 0)
-        {
-            perror("requester connection closed");
-            return completion(boost::system::errc::make_error_code(boost::system::errc::not_connected));
-        }
-
-        boost::system::error_code splice_ec;
-        splice(requester.native(), pipe[1], splice_ec);
-
-        if (splice_ec)
-        {
-            if (splice_ec == boost::system::errc::resource_unavailable_try_again)
-                start_waiting_request_output();
-            else
-                return finish(splice_ec);
-        }
-        else
-        {
-            start_waiting_request_input();
-        }
-    }
-
-    void finished_waiting_request_output(const boost::system::error_code& ec)
-    {
-        std::cerr << "finished_waiting_request_output ec: " << ec << std::endl;
-        if (ec)
-            return finish(ec);
-
-        boost::system::error_code splice_ec;
-        splice(pipe[0], responser.native(), splice_ec);
-
-        if (splice_ec)
-        {
-            if (splice_ec == boost::system::errc::resource_unavailable_try_again)
-                start_waiting_request_output();
-            else
-                return finish(splice_ec);
-        }
-        else
-        {
-            start_waiting_request_input();
-        }
-    }
-
-    void finished_waiting_request()
-    {
-        boost::system::error_code ec;
-        wait_for_t wait_for;
-        double_splice(requester, responser, request_pipe, wait_for, ec);
-        if (ec)
-            return finish(ec);
-
-        switch (wait_for)
-        {
-            case wait_input:
-                start_waiting_request_input();
-                break;
-            case wait_output:
-                start_waiting_request_output();
-                break;
-        }
-    }
-
-    void start_waiting_response_input()
-    {
-        std::cerr << "start_waiting_response_input" << std::endl;
-        responser.async_read_some(null_buffers(), boost::bind(&session::finished_waiting_response_input, this, placeholders::error));
-    }
-
-    void start_waiting_response_output()
-    {
-        std::cerr << "start_waiting_response_output" << std::endl;
-        requester.async_write_some(null_buffers(), boost::bind(&session::finished_waiting_response_output, this, placeholders::error));
-    }
-
-    void finished_waiting_response_input(const boost::system::error_code& ec)
-    {
-        std::cerr << "finished_waiting_response_input ec: " << ec << std::endl;
-        if (ec)
-            return finish(ec);
-
-        if (responser.available() == 0)
-        {
-            perror("responser connection closed");
-            return completion(boost::system::errc::make_error_code(boost::system::errc::not_connected));
-        }
-
-        finished_waiting_response();
-    }
-
-    void finished_waiting_response_output(const boost::system::error_code& ec)
-    {
-        std::cerr << "finished_waiting_response_output ec: " << ec << std::endl;
-        if (ec)
-            return finish(ec);
-
-        finished_waiting_response();
-    }
-
-    void finished_waiting_response()
-    {
-        boost::system::error_code ec;
-        wait_for_t wait_for;
-        splice(responser, requester, response_pipe, wait_for, ec);
-        if (ec)
-            return finish(ec);
-
-        switch (wait_for)
-        {
-            case wait_input:
-                start_waiting_response_input();
-                break;
-            case wait_output:
-                start_waiting_response_output();
-                break;
-        }
+        request_channel.start();
+        response_channel.start();
     }
 
 protected:
@@ -259,44 +230,15 @@ protected:
         return std::string(begin, end);
     }
 
-    enum wait_for_t
-    {
-        wait_input,
-        wait_output,
-    };
-
-    void double_splice(ip::tcp::socket& from, ip::tcp::socket& to, int pipe[2], wait_for_t& wait_for, boost::system::error_code& ec)
-    {
-        wait_for = wait_input;
-        splice(from.native(), pipe[1], ec);
-        if (ec == boost::system::errc::resource_unavailable_try_again)
-            wait_for = wait_output;
-
-        splice(pipe[0], to.native(), ec);
-        if (ec == boost::system::errc::resource_unavailable_try_again)
-            wait_for = wait_output;
-    }
-
-    void splice(int from, int to, boost::system::error_code& ec)
-    {
-        long spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK);
-        if (spliced == -1)
-        {
-            perror("splice");
-            ec = boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t>(errno));
-        }
-        std::cerr << "spliced " << spliced << " bytes" << std::endl;
-    }
-
 private:
     ip::tcp::socket requester;
-    int request_pipe[2];
-    int response_pipe[2];
-    ip::tcp::socket responser;
-    CompletionHandler completion;
-    const static std::size_t http_header_head_max_size = sizeof('GET http://') + 256;
-    boost::array<char, http_header_head_max_size> header;
+    ip::tcp::socket responder;
     ip::tcp::resolver resolver;
+    channel request_channel;
+    channel response_channel;
+    CompletionHandler completion;
+    const static std::size_t http_header_head_max_size = sizeof('GET http://'            ) + 256;
+    boost::array<char, http_header_head_max_size> header;
     static std::string default_http_port;
 };
 
