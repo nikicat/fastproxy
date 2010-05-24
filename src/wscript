@@ -3,12 +3,16 @@
 # Thomas Nagy, 2006-2010 (ita)
 
 def configure(conf):
-	pass
+	conf.env.LIB_BOOST      = ['boost_program_options-mt', 'boost_system-mt']
+#	conf.env.LIBPATH_TEST   = ['/usr/lib64']
+#	conf.env.LINKFLAGS_TEST = ['-g']
+#	conf.env.CPPPATH_TEST   = ['/opt/gnome/include']
 
 def build(bld):
 	# 1. A simple c++ program
 	bld(
 		features = 'cxx cprogram',
-		source = 'fastproxy.cpp',
+		source = 'fastproxy.cpp channel.cpp session.cpp',
 		target = 'fastproxy',
-		defines = '')
+		defines = '',
+		uselib = 'BOOST')
