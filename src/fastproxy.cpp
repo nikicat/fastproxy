@@ -13,17 +13,27 @@
 #include <boost/bind.hpp>
 #include <boost/system/linux_error.hpp>
 #include <boost/program_options.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/sources/channel_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/utility/init/to_console.hpp>
+#include <boost/log/utility/init/common_attributes.hpp>
+#include <boost/log/filters.hpp>
 
 #include "session.hpp"
+#include "common.hpp"
 
 using namespace boost::asio;
+namespace logging = boost::log;
 
 class proxy : public boost::noncopyable
 {
 public:
-    proxy(io_service& io, ip::tcp::endpoint inbound) :
-        acceptor(io, inbound)
+    proxy(io_service& io, ip::tcp::endpoint inbound)
+        : acceptor(io, inbound)
+        , log(logging::keywords::channel = "proxy")
     {
+        BOOST_LOG(log) << "start listening on " << inbound;
         acceptor.listen();
     }
 
@@ -48,18 +58,19 @@ public:
 
     void session_closed(session_ptr session, const boost::system::error_code& ec)
     {
-        std::cerr << "session finished. ec=" << ec << std::endl;
+        TRACE_HANDLER(ec);
         sessions.erase(session);
     }
 
 private:
     ip::tcp::acceptor acceptor;
     std::set<session_ptr> sessions;
+    logging::sources::channel_logger<> log;
 };
 
 namespace po = boost::program_options;
 
-int main(int argc, char* argv[])
+po::variables_map parse_config(int argc, char* argv[])
 {
     po::options_description desc("Allowed options");
     desc.add_options()("help", "produce help message")("listen", po::value<boost::uint16_t>(), "listening port");
@@ -71,8 +82,30 @@ int main(int argc, char* argv[])
     if (vm.count("help") || !vm.count("listen"))
     {
         std::cout << desc << std::endl;
-        return 1;
+        exit(1);
     }
+
+    return vm;
+}
+
+void init_logging()
+{
+    logging::add_common_attributes();
+    logging::init_log_to_console
+    (
+            std::clog,
+            logging::keywords::format = "[%TimeStamp%]: %Channel%: %_%"
+    );
+    boost::log::core::get()->set_filter
+    (
+        boost::log::filters::attr<boost::log::trivial::severity_level>("Severity") >= boost::log::trivial::debug
+    );
+}
+
+int main(int argc, char* argv[])
+{
+    po::variables_map vm = parse_config(argc, argv);
+    init_logging();
 
     ip::tcp::endpoint inbound(ip::tcp::v4(), vm["listen"].as<boost::uint16_t> ());
 

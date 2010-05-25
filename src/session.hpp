@@ -10,18 +10,27 @@
 
 #include <iostream>
 #include <boost/function.hpp>
+#include <boost/log/sources/channel_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
 
 #include "channel.hpp"
 
 using namespace boost::asio;
+using boost::system::system_error;
+using boost::system::error_code;
+namespace logging = boost::log;
 
 typedef boost::function<void(const boost::system::error_code&)> CompletionHandler;
 
 class session : public boost::noncopyable
 {
 public:
-    session(io_service& io) :
-        requester(io), responder(io), resolver(io), request_channel(requester, responder, this), response_channel(responder, requester, this)
+    session(io_service& io)
+        : requester(io), responder(io), resolver(io)
+        , request_channel(requester, responder, this)
+        , response_channel(responder, requester, this)
+        , opened_channels(0)
+        , log(logging::keywords::channel = "session")
     {
     }
 
@@ -32,20 +41,17 @@ public:
 
     void start(const CompletionHandler& completion)
     {
+        BOOST_LOG(log) << "start. completion=" << completion;
         this->completion = completion;
         start_receive_header();
     }
 
-    void finish(const boost::system::error_code& ec)
+    void finish(const error_code& ec)
     {
-        CompletionHandler c(boost::bind(&session::print_error_code, this, placeholders::error));
-        c.swap(completion);
-        c(ec);
-    }
-
-    void print_error_code(const boost::system::error_code& ec)
-    {
-        std::cerr << ec << std::endl;
+        opened_channels--;
+        BOOST_LOG(log) << system_error(ec, "channel closed").what();
+        if (opened_channels == 0)
+            completion(ec);
     }
 
     void start_receive_header()
@@ -54,9 +60,9 @@ public:
                 placeholders::error, placeholders::bytes_transferred));
     }
 
-    void finished_receive_header(const boost::system::error_code& ec, std::size_t bytes_transferred)
+    void finished_receive_header(const error_code& ec, std::size_t bytes_transferred)
     {
-        std::cerr << "handle_header" << std::endl;
+        BOOST_LOG(log) << system_error(ec, "handle_header").what();
         if (ec)
             return finish(ec);
         std::string peer = parse_header(bytes_transferred);
@@ -69,7 +75,7 @@ public:
                 placeholders::error, placeholders::iterator));
     }
 
-    void finished_resolving(const boost::system::error_code& ec, ip::tcp::resolver::iterator iterator)
+    void finished_resolving(const error_code& ec, ip::tcp::resolver::iterator iterator)
     {
         if (ec)
             return finish(ec);
@@ -78,15 +84,17 @@ public:
 
     void start_connecting_to_peer(ip::tcp::resolver::iterator iterator)
     {
-        std::cerr << "connecting to " << iterator->endpoint() << std::endl;
+        BOOST_LOG(log) << "connecting to " << iterator->endpoint();
         responder.async_connect(iterator->endpoint(), boost::bind(&session::finished_connecting_to_peer, this, placeholders::error));
     }
 
-    void finished_connecting_to_peer(const boost::system::error_code& ec)
+    void finished_connecting_to_peer(const error_code& ec)
     {
         if (ec)
             return finish(ec);
+        opened_channels++;
         request_channel.start();
+        opened_channels++;
         response_channel.start();
     }
 
@@ -105,9 +113,11 @@ private:
     channel request_channel;
     channel response_channel;
     CompletionHandler completion;
-    const static std::size_t http_header_head_max_size = sizeof('GET http://'            ) + 256;
+    const static std::size_t http_header_head_max_size = sizeof("GET http://") + 256;
     boost::array<char, http_header_head_max_size> header;
     static std::string default_http_port;
+    int opened_channels;
+    logging::sources::channel_logger<> log;
 };
 
 typedef boost::shared_ptr<session> session_ptr;
