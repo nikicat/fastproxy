@@ -23,8 +23,6 @@ channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* paren
     : input(input)
     , output(output)
     , pipe_size(0)
-    , waiting_input(false)
-    , waiting_output(false)
     , parent_session(parent_session)
     , log(boost::log::keywords::channel = "channel")
 {
@@ -45,21 +43,18 @@ void channel::start()
 void channel::start_waiting_input()
 {
     TRACE();
-    waiting_input = true;
     input.async_read_some(null_buffers(), boost::bind(&channel::finished_waiting_input, this, placeholders::error));
 }
 
 void channel::start_waiting_output()
 {
     TRACE();
-    waiting_output = true;
     output.async_write_some(null_buffers(), boost::bind(&channel::finished_waiting_output, this, placeholders::error));
 }
 
 void channel::finished_waiting_input(const boost::system::error_code& ec)
 {
-    waiting_input = false;
-    TRACE_HANDLER(ec);
+    TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
 
@@ -68,8 +63,7 @@ void channel::finished_waiting_input(const boost::system::error_code& ec)
 
 void channel::finished_waiting_output(const boost::system::error_code& ec)
 {
-    waiting_output = false;
-    TRACE_HANDLER(ec);
+    TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
 
@@ -80,7 +74,7 @@ void channel::splice_from_input()
 {
     if (input.available() == 0)
     {
-        BOOST_LOG(log) << "requester connection closed";
+        TRACE() << "requester connection closed";
         return finish(boost::system::errc::make_error_code(boost::system::errc::not_connected));
     }
 
@@ -91,7 +85,7 @@ void channel::splice_from_input()
     pipe_size += spliced;
     assert(pipe_size >= 0);
     if (ec)
-        finish(ec);
+        return finish(ec);
 
     finished_splice();
 }
@@ -105,7 +99,7 @@ void channel::splice_to_output()
     pipe_size -= spliced;
     assert(pipe_size >= 0);
     if (ec)
-        finish(ec);
+        return finish(ec);
 
     finished_splice();
 }
@@ -117,20 +111,17 @@ void channel::finished_splice()
 
 void channel::start_waiting()
 {
-    assert(!waiting_input || !waiting_output || !"wtf?!?");
+    TRACE() << " pipe_size=" << pipe_size;
 
-    TRACE() << " waiting_input=" << waiting_input << " waiting_output=" << waiting_output << " pipe_size=" << pipe_size;
-
-    if (pipe_size > 0 && !waiting_input)
+    if (pipe_size > 0)
         start_waiting_output();
-    else if (pipe_size < PIPE_SIZE && !waiting_output)
+    else if (pipe_size < PIPE_SIZE)
         start_waiting_input();
 }
 
 void channel::finish(const boost::system::error_code& ec)
 {
-    if (!waiting_input && !waiting_output)
-        parent_session->finish(ec);
+    parent_session->finish(ec);
 }
 
 void channel::splice(int from, int to, long& spliced, boost::system::error_code& ec)
@@ -139,11 +130,11 @@ void channel::splice(int from, int to, long& spliced, boost::system::error_code&
     if (spliced == -1)
     {
         ec = boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t> (errno));
-        BOOST_LOG(log) << boost::system::system_error(ec, "splice").what();
+        TRACE_ERROR(ec);
         spliced = 0;
 
         if (ec == boost::system::errc::resource_unavailable_try_again)
             ec.clear();
     }
-    BOOST_LOG(log) << "spliced " << spliced << " bytes";
+    TRACE() << spliced << " bytes";
 }

@@ -58,7 +58,7 @@ public:
 
     void session_closed(session_ptr session, const boost::system::error_code& ec)
     {
-        TRACE_HANDLER(ec);
+        TRACE_ERROR(ec);
         sessions.erase(session);
     }
 
@@ -96,10 +96,10 @@ void init_logging()
             std::clog,
             logging::keywords::format = "[%TimeStamp%]: %Channel%: %_%"
     );
-    boost::log::core::get()->set_filter
-    (
-        boost::log::filters::attr<boost::log::trivial::severity_level>("Severity") >= boost::log::trivial::debug
-    );
+//    boost::log::core::get()->set_filter
+//    (
+//        boost::log::filters::attr<boost::log::trivial::severity_level>("Severity") >= boost::log::trivial::debug
+//    );
 }
 
 int main(int argc, char* argv[])

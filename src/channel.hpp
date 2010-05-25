@@ -44,8 +44,6 @@ private:
     ip::tcp::socket& output;
     int pipe[2];
     long pipe_size;
-    bool waiting_input;
-    bool waiting_output;
     session* parent_session;
     boost::log::sources::channel_logger<> log;
 };

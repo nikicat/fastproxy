@@ -14,6 +14,7 @@
 #include <boost/log/sources/record_ostream.hpp>
 
 #include "channel.hpp"
+#include "common.hpp"
 
 using namespace boost::asio;
 using boost::system::system_error;
@@ -41,7 +42,6 @@ public:
 
     void start(const CompletionHandler& completion)
     {
-        BOOST_LOG(log) << "start. completion=" << completion;
         this->completion = completion;
         start_receive_header();
     }
@@ -49,7 +49,7 @@ public:
     void finish(const error_code& ec)
     {
         opened_channels--;
-        BOOST_LOG(log) << system_error(ec, "channel closed").what();
+        TRACE_ERROR(ec);
         if (opened_channels == 0)
             completion(ec);
     }
@@ -62,21 +62,23 @@ public:
 
     void finished_receive_header(const error_code& ec, std::size_t bytes_transferred)
     {
-        BOOST_LOG(log) << system_error(ec, "handle_header").what();
+        TRACE_ERROR(ec);
         if (ec)
             return finish(ec);
-        std::string peer = parse_header(bytes_transferred);
+        std::pair<std::string, std::string> peer = parse_header(bytes_transferred);
         start_resolving(peer);
     }
 
-    void start_resolving(const std::string& peer)
+    void start_resolving(const std::pair<std::string, std::string>& peer)
     {
-        resolver.async_resolve(ip::tcp::resolver::query(peer, default_http_port), boost::bind(&session::finished_resolving, this,
+        TRACE() << peer.first << ":" << peer.second;
+        resolver.async_resolve(ip::tcp::resolver::query(peer.first, peer.second), boost::bind(&session::finished_resolving, this,
                 placeholders::error, placeholders::iterator));
     }
 
     void finished_resolving(const error_code& ec, ip::tcp::resolver::iterator iterator)
     {
+        TRACE_ERROR(ec);
         if (ec)
             return finish(ec);
         start_connecting_to_peer(iterator);
@@ -84,12 +86,13 @@ public:
 
     void start_connecting_to_peer(ip::tcp::resolver::iterator iterator)
     {
-        BOOST_LOG(log) << "connecting to " << iterator->endpoint();
+        TRACE() << iterator->endpoint();
         responder.async_connect(iterator->endpoint(), boost::bind(&session::finished_connecting_to_peer, this, placeholders::error));
     }
 
     void finished_connecting_to_peer(const error_code& ec)
     {
+        TRACE_ERROR(ec);
         if (ec)
             return finish(ec);
         opened_channels++;
@@ -99,11 +102,12 @@ public:
     }
 
 protected:
-    std::string parse_header(std::size_t size)
+    std::pair<std::string, std::string> parse_header(std::size_t size)
     {
         char* begin = std::find(header.begin(), header.begin() + size, ' ') + 8;
         char* end = std::find(begin, header.begin() + size, '/');
-        return std::string(begin, end);
+        char* colon = std::find(begin, end, ':');
+        return colon == end ? std::make_pair(std::string(begin, colon), default_http_port) : std::make_pair(std::string(begin, colon), std::string(colon + 1, end));
     }
 
 private:
