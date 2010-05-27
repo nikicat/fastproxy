@@ -19,11 +19,8 @@
 #include <boost/log/utility/init/common_attributes.hpp>
 #include <boost/log/filters.hpp>
 
-#include "common.hpp"
 #include "proxy.hpp"
-
-using namespace boost::asio;
-namespace logging = boost::log;
+#include "common.hpp"
 
 namespace po = boost::program_options;
 
@@ -65,10 +62,12 @@ int main(int argc, char* argv[])
     init_logging();
 
     ip::tcp::endpoint inbound(ip::tcp::v4(), vm["listen"].as<boost::uint16_t> ());
+    ip::udp::endpoint outbound(ip::address::from_string(vm["outbound"].as<std::string> ()), 0);
+    ip::udp::endpoint name_server(ip::address::from_string(vm["name-server"].as<std::string> ()), 53);
 
     io_service io;
-    proxy p(io, inbound);
-    p.start_accept();
+    proxy p(io, inbound, outbound, name_server);
+    p.start();
 
     io.run();
 

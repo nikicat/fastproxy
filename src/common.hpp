@@ -18,4 +18,9 @@
 #define TRACE_ERROR(ec) BOOST_LOG(log) << system_error(ec, __func__).what()
 #endif
 
+using namespace boost::asio;
+using boost::system::system_error;
+using boost::system::error_code;
+namespace logging = boost::log;
+
 #endif /* COMMON_HPP_ */

@@ -14,18 +14,41 @@
 
 #include "common.hpp"
 #include "session.hpp"
+#include "resolver.hpp"
 
 class proxy : public boost::noncopyable
 {
 public:
-    proxy(io_service& io, ip::tcp::endpoint inbound)
+    proxy(io_service& io, const ip::tcp::endpoint& inbound, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server)
         : acceptor(io, inbound)
+        , resolver_(io, outbound, name_server)
         , log(logging::keywords::channel = "proxy")
     {
         TRACE() << "start listening on " << inbound;
         acceptor.listen();
     }
 
+    // called by main (parent)
+    void start()
+    {
+        start_accept();
+        resolver_.start();
+    }
+
+    // called by session (child)
+    resolver& get_resolver()
+    {
+        return resolver_;
+    }
+
+    // called by session (child)
+    void finished_session(session_ptr session, const boost::system::error_code& ec)
+    {
+        TRACE_ERROR(ec);
+        sessions.erase(session);
+    }
+
+protected:
     void start_accept()
     {
         session_ptr new_sess(new session(acceptor.io_service(), *this));
@@ -36,7 +59,7 @@ public:
     {
         TRACE_ERROR(ec);
         if (ec)
-            return acceptor.io_service().stop();
+            return;
 
         start_session(new_session);
     }
@@ -48,14 +71,9 @@ public:
         start_accept();
     }
 
-    void finished_session(session_ptr session, const boost::system::error_code& ec)
-    {
-        TRACE_ERROR(ec);
-        sessions.erase(session);
-    }
-
 private:
     ip::tcp::acceptor acceptor;
+    resolver resolver_;
     std::set<session_ptr> sessions;
     logging::sources::channel_logger<> log;
 };
