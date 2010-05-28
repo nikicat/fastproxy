@@ -37,7 +37,7 @@ void session::finish(const error_code& ec)
     opened_channels--;
     TRACE_ERROR(ec);
     if (opened_channels == 0)
-        parent_proxy.finished_session(shared_from_this(), ec);
+        parent_proxy.finished_session(this, ec);
 }
 
 void session::start_receive_header()

@@ -42,29 +42,33 @@ public:
     }
 
     // called by session (child)
-    void finished_session(session_ptr session, const boost::system::error_code& ec)
+    void finished_session(session* session, const boost::system::error_code& ec)
     {
         TRACE_ERROR(ec);
         sessions.erase(session);
+        delete session;
     }
 
 protected:
     void start_accept()
     {
-        session_ptr new_sess(new session(acceptor.io_service(), *this));
-        acceptor.async_accept(new_sess->socket(), boost::bind(&proxy::handle_accept, this, placeholders::error, new_sess));
+        std::unique_ptr<session> new_sess(new session(acceptor.io_service(), *this));
+        acceptor.async_accept(new_sess->socket(), boost::bind(&proxy::handle_accept, this, placeholders::error, new_sess.get()));
+        new_sess.release();
     }
 
-    void handle_accept(const boost::system::error_code& ec, session_ptr new_session)
+    void handle_accept(const boost::system::error_code& ec, session* new_session)
     {
+        std::unique_ptr<session> session_ptr(new_session);
         TRACE_ERROR(ec);
         if (ec)
             return;
 
-        start_session(new_session);
+        start_session(session_ptr.get());
+        session_ptr.release();
     }
 
-    void start_session(session_ptr new_session)
+    void start_session(session* new_session)
     {
         sessions.insert(new_session);
         new_session->start();
@@ -72,9 +76,10 @@ protected:
     }
 
 private:
+    typedef std::set<session*> session_cont;
     ip::tcp::acceptor acceptor;
     resolver resolver_;
-    std::set<session_ptr> sessions;
+    session_cont sessions;
     logging::sources::channel_logger<> log;
 };
 

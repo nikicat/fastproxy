@@ -20,7 +20,7 @@
 
 class proxy;
 
-class session : public boost::noncopyable, public boost::enable_shared_from_this<session>
+class session : public boost::noncopyable
 {
 public:
     session(io_service& io, proxy& parent_proxy);

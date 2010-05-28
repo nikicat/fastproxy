@@ -42,7 +42,7 @@ def configure(conf):
 	rel.set_variant('release')
 	conf.set_env_name('release', rel)
 	conf.setenv('release')
-	conf.env.CXXFLAGS = ['-O2', '-DNOTRACE']
+	conf.env.CXXFLAGS = ['-O2', '-DNOTRACE', '-ggdb3']
 
 
 def build(bld):

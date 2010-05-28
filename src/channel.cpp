@@ -35,8 +35,8 @@ channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* paren
 
 void channel::start()
 {
-    sources::channel_logger<> new_log(keywords::channel = (boost::format("channel %1%->%2%") % input.native() % output.native()).str());
-    log.swap(new_log);
+    //sources::channel_logger<> new_log(keywords::channel = (boost::format("channel %1%->%2%") % input.native() % output.native()).str());
+    //log.swap(new_log);
     start_waiting();
 }
 
