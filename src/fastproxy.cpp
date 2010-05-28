@@ -27,13 +27,17 @@ namespace po = boost::program_options;
 po::variables_map parse_config(int argc, char* argv[])
 {
     po::options_description desc("Allowed options");
-    desc.add_options()("help", "produce help message")("listen", po::value<boost::uint16_t>(), "listening port");
+    desc.add_options()
+            ("help", "produce help message")
+            ("listen", po::value<boost::uint16_t>()->required(), "listening port")
+            ("outgoing", po::value<std::string>()->required(), "outgoing address")
+            ("name-server", po::value<std::string>()->required(), "name server address");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help") || !vm.count("listen"))
+    if (vm.count("help"))
     {
         std::cout << desc << std::endl;
         exit(1);
@@ -60,9 +64,10 @@ int main(int argc, char* argv[])
 {
     po::variables_map vm = parse_config(argc, argv);
     init_logging();
+    init_resolver();
 
     ip::tcp::endpoint inbound(ip::tcp::v4(), vm["listen"].as<boost::uint16_t> ());
-    ip::udp::endpoint outbound(ip::address::from_string(vm["outbound"].as<std::string> ()), 0);
+    ip::udp::endpoint outbound(ip::address::from_string(vm["outgoing"].as<std::string> ()), 0);
     ip::udp::endpoint name_server(ip::address::from_string(vm["name-server"].as<std::string> ()), 53);
 
     io_service io;

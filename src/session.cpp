@@ -5,6 +5,11 @@
  *      Author: nbryskin
  */
 
+#include <functional>
+#include <algorithm>
+#include <boost/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+
 #include "session.hpp"
 #include "proxy.hpp"
 
@@ -62,7 +67,7 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
     if (ec)
         return finish(ec);
     // TODO: cycle throw all addresses
-    start_connecting_to_peer(ip::tcp::endpoint(ip::address_v4(begin->s_addr), port));
+    start_connecting_to_peer(ip::tcp::endpoint(*begin, port));
 }
 
 void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
@@ -84,8 +89,9 @@ void session::finished_connecting_to_peer(const error_code& ec)
 
 std::pair<std::string, std::uint16_t> session::parse_header(std::size_t size)
 {
+    using boost::lambda::_1;
     char* begin = std::find(header.begin(), header.begin() + size, ' ') + 8;
-    char* end = std::find(begin, header.begin() + size, '/');
+    char* end = std::find_if(begin, header.begin() + size, _1 == ' ' || _1 == '/');
     char* colon = std::find(begin, end, ':');
     *end = 0;
     // TODO: replace with c++-style conversion

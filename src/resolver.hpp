@@ -21,8 +21,8 @@ using boost::system::error_code;
 class resolver
 {
 public:
-    typedef in_addr* iterator;
-    typedef const in_addr* const_iterator;
+    typedef ip::address_v4* iterator;
+    typedef const ip::address_v4* const_iterator;
     typedef boost::function<void (const boost::system::error_code&, const_iterator, const_iterator)> callback;
 
     resolver(io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server);
@@ -34,19 +34,23 @@ public:
     void async_resolve(const std::string& host_name, const callback& completion);
 
 protected:
-    void start_receiving_resolve_data();
+    void start_waiting_receive();
+    void finished_waiting_receive(const boost::system::error_code& ec);
 
-    void finish_receiving_resolve_data(const boost::system::error_code& ec, std::size_t /*bytes_transferred*/);
+    void start_waiting_timer();
+    void finished_waiting_timer(const error_code& ec);
 
     static void finished_resolve_raw(dns_ctx* ctx, void* result, void* data);
-
     void finished_resolve(int status, const dns_rr_a4& response, const callback& completion);
 
 private:
     typedef boost::function<void (int, const dns_rr_a4&)> resolve_callback_internal;
     ip::udp::socket socket;
+    deadline_timer timer;
     dns_ctx* context;
     logging::sources::channel_logger<> log;
 };
+
+void init_resolver();
 
 #endif /* RESOLVER_HPP_ */
