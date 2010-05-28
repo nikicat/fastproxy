@@ -12,19 +12,18 @@
 #include "channel.hpp"
 #include "session.hpp"
 
-#include "common.hpp"
-
 using namespace boost::log;
 using namespace boost::system;
 
 const long PIPE_SIZE = 65536;
+
+channel_logger channel::log = channel_logger(boost::log::keywords::channel = "channel");
 
 channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session)
     : input(input)
     , output(output)
     , pipe_size(0)
     , parent_session(parent_session)
-    , log(boost::log::keywords::channel = "channel")
 {
     if (pipe2(pipe, O_NONBLOCK) == -1)
     {

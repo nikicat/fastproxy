@@ -9,6 +9,7 @@
 #define COMMON_HPP_
 
 #include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/sources/channel_logger.hpp>
 
 #ifdef NOTRACE
 #define TRACE() while (false) BOOST_LOG(log)
@@ -22,5 +23,6 @@ using namespace boost::asio;
 using boost::system::system_error;
 using boost::system::error_code;
 namespace logging = boost::log;
+typedef boost::log::sources::channel_logger<> channel_logger;
 
 #endif /* COMMON_HPP_ */

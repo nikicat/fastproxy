@@ -10,7 +10,8 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/log/sources/channel_logger.hpp>
+
+#include "common.hpp"
 
 using namespace boost::asio;
 using boost::system::error_code;
@@ -45,7 +46,7 @@ private:
     int pipe[2];
     long pipe_size;
     session* parent_session;
-    boost::log::sources::channel_logger<> log;
+    static channel_logger log;
 };
 
 #endif /* CHANNEL_HPP_ */

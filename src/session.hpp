@@ -11,8 +11,6 @@
 #include <cstdint>
 #include <boost/smart_ptr.hpp>
 #include <boost/function.hpp>
-#include <boost/log/sources/channel_logger.hpp>
-#include <boost/log/sources/record_ostream.hpp>
 
 #include "channel.hpp"
 #include "resolver.hpp"
@@ -56,7 +54,7 @@ private:
     boost::array<char, http_header_head_max_size> header;
     const static std::uint16_t default_http_port = 80;
     int opened_channels;
-    logging::sources::channel_logger<> log;
+    static channel_logger log;
 };
 
 typedef boost::shared_ptr<session> session_ptr;

@@ -13,12 +13,13 @@
 #include "session.hpp"
 #include "proxy.hpp"
 
+channel_logger session::log = channel_logger(logging::keywords::channel = "session");
+
 session::session(io_service& io, proxy& parent_proxy)
     : parent_proxy(parent_proxy), requester(io), responder(io), resolver(io)
     , request_channel(requester, responder, this)
     , response_channel(responder, requester, this)
     , opened_channels(0)
-    , log(logging::keywords::channel = "session")
 {
 }
 
