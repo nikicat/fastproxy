@@ -53,11 +53,10 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
-    std::string peer = parse_header(bytes_transferred);
-    start_resolving(peer);
+    start_resolving(parse_header(bytes_transferred));
 }
 
-void session::start_resolving(const std::string& peer)
+void session::start_resolving(const char* peer)
 {
     TRACE() << peer << ":" << port;
     parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
@@ -89,14 +88,15 @@ void session::finished_connecting_to_peer(const error_code& ec)
     response_channel.start();
 }
 
-std::string session::parse_header(std::size_t size)
+const char* session::parse_header(std::size_t size)
 {
     using boost::lambda::_1;
     char* begin = std::find(header.begin(), header.begin() + size, ' ') + 8;
     char* end = std::find_if(begin, header.begin() + size, _1 == ' ' || _1 == '/');
     char* colon = std::find(begin, end, ':');
     *end = 0;
+    *colon = 0;
     // TODO: replace with c++-style conversion
     port = (colon == end ? default_http_port : std::uint16_t(atoi(colon + 1)));
-    return std::string(begin, colon);
+    return begin;
 }

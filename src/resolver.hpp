@@ -26,12 +26,10 @@ public:
     typedef boost::function<void (const boost::system::error_code&, const_iterator, const_iterator)> callback;
 
     resolver(io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server);
-
     ~resolver();
 
     void start();
-
-    void async_resolve(const std::string& host_name, const callback& completion);
+    void async_resolve(const char* host_name, const callback& completion);
 
 protected:
     void start_waiting_receive();

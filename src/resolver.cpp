@@ -38,10 +38,10 @@ void resolver::start()
     start_waiting_receive();
 }
 
-void resolver::async_resolve(const std::string& host_name, const callback& completion)
+void resolver::async_resolve(const char* host_name, const callback& completion)
 {
     TRACE() << host_name;
-    dns_query* query = dns_submit_p(context, host_name.c_str(), DNS_C_IN, DNS_T_A, 0, dns_parse_a4, &resolver::finished_resolve_raw, const_cast<callback*>(&completion));
+    dns_query* query = dns_submit_p(context, host_name, DNS_C_IN, DNS_T_A, 0, dns_parse_a4, &resolver::finished_resolve_raw, const_cast<callback*>(&completion));
     if (query == 0)
         completion(boost::system::error_code(dns_status(context), boost::system::get_generic_category()), 0, 0);
     start_waiting_timer();

@@ -35,13 +35,13 @@ protected:
     void start_receive_header();
     void finished_receive_header(const error_code& ec, std::size_t bytes_transferred);
 
-    void start_resolving(const std::string& peer);
+    void start_resolving(const char* peer);
     void finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end);
 
     void start_connecting_to_peer(const ip::tcp::endpoint& peer);
     void finished_connecting_to_peer(const error_code& ec);
 
-    std::string parse_header(std::size_t size);
+    const char* parse_header(std::size_t size);
 
 private:
     proxy& parent_proxy;
