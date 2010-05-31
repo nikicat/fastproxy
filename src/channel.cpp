@@ -12,6 +12,7 @@
 
 #include "channel.hpp"
 #include "session.hpp"
+#include "statistics.hpp"
 
 using namespace boost::log;
 using namespace boost::system;
@@ -42,6 +43,7 @@ channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* paren
     , parent_session(parent_session)
     , input_handler(boost::bind(&channel::finished_waiting_input, this, placeholders::error(), placeholders::bytes_transferred()))
     , output_handler(boost::bind(&channel::finished_waiting_output,this, placeholders::error(), placeholders::bytes_transferred()))
+    , splices_count(0)
 {
     if (pipe2(pipe, O_NONBLOCK) == -1)
     {
@@ -142,11 +144,13 @@ void channel::start_waiting()
 
 void channel::finish(const boost::system::error_code& ec)
 {
+    statistics::push("splice_cnt", splices_count);
     parent_session->finish(ec);
 }
 
 void channel::splice(int from, int to, long& spliced, boost::system::error_code& ec)
 {
+    splices_count++;
     spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | SPLICE_F_MORE | MSG_NOSIGNAL);
     if (spliced == -1)
     {

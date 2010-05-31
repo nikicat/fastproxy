@@ -62,6 +62,7 @@ private:
     char space_for_input_op[size_of_operation];
     handler_t output_handler;
     char space_for_output_op[size_of_operation];
+    std::size_t splices_count;
 };
 
 #endif /* CHANNEL_HPP_ */
