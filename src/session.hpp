@@ -35,13 +35,13 @@ protected:
     void start_receive_header();
     void finished_receive_header(const error_code& ec, std::size_t bytes_transferred);
 
-    void start_resolving(const std::pair<std::string, std::uint16_t>& peer);
-    void finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end, std::uint16_t port);
+    void start_resolving(const std::string& peer);
+    void finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end);
 
     void start_connecting_to_peer(const ip::tcp::endpoint& peer);
     void finished_connecting_to_peer(const error_code& ec);
 
-    std::pair<std::string, std::uint16_t> parse_header(std::size_t size);
+    std::string parse_header(std::size_t size);
 
 private:
     proxy& parent_proxy;
@@ -54,6 +54,8 @@ private:
     boost::array<char, http_header_head_max_size> header;
     const static std::uint16_t default_http_port = 80;
     int opened_channels;
+    boost::function<void (const error_code&, resolver::const_iterator, resolver::const_iterator)> resolve_handler;
+    std::uint16_t port;
     static channel_logger log;
 };
 

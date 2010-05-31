@@ -14,11 +14,12 @@ void init_resolver()
     dns_init(0, 0);
 }
 
+logging::sources::channel_logger<> resolver::log = logging::sources::channel_logger<>(logging::keywords::channel = "proxy");
+
 resolver::resolver(io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server)
     : socket(io)
     , timer(io)
     , context(dns_new(0))
-    , log(logging::keywords::channel = "proxy")
 {
     dns_add_serv_s(context, 0);
     dns_add_serv_s(context, name_server.data());
@@ -40,8 +41,7 @@ void resolver::start()
 void resolver::async_resolve(const std::string& host_name, const callback& completion)
 {
     TRACE() << host_name;
-    void* data = new resolve_callback_internal(boost::bind(&resolver::finished_resolve, this, _1, _2, completion));
-    dns_query* query = dns_submit_p(context, host_name.c_str(), DNS_C_IN, DNS_T_A, 0, dns_parse_a4, &resolver::finished_resolve_raw, data);
+    dns_query* query = dns_submit_p(context, host_name.c_str(), DNS_C_IN, DNS_T_A, 0, dns_parse_a4, &resolver::finished_resolve_raw, const_cast<callback*>(&completion));
     if (query == 0)
         completion(boost::system::error_code(dns_status(context), boost::system::get_generic_category()), 0, 0);
     start_waiting_timer();
@@ -88,11 +88,11 @@ void resolver::finished_waiting_timer(const error_code& ec)
 
 void resolver::finished_resolve_raw(dns_ctx* ctx, void* result, void* data)
 {
-    resolve_callback_internal& completion = *static_cast<resolve_callback_internal*>(data);
+    const callback& completion = *static_cast<const callback*>(data);
     dns_rr_a4& response = *static_cast<dns_rr_a4*>(result);
 
     int status = dns_status(ctx);
-    completion(status, response);
+    finished_resolve(status, response, completion);
 }
 
 void resolver::finished_resolve(int status, const dns_rr_a4& response, const callback& completion)

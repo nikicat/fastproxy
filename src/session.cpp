@@ -20,6 +20,7 @@ session::session(io_service& io, proxy& parent_proxy)
     , request_channel(requester, responder, this)
     , response_channel(responder, requester, this)
     , opened_channels(0)
+    , resolve_handler(boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3))
 {
 }
 
@@ -52,17 +53,17 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
-    std::pair<std::string, std::uint16_t> host_port = parse_header(bytes_transferred);
-    start_resolving(host_port);
+    std::string peer = parse_header(bytes_transferred);
+    start_resolving(peer);
 }
 
-void session::start_resolving(const std::pair<std::string, std::uint16_t>& peer)
+void session::start_resolving(const std::string& peer)
 {
-    TRACE() << peer.first << ":" << peer.second;
-    parent_proxy.get_resolver().async_resolve(peer.first, boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3, peer.second));
+    TRACE() << peer << ":" << port;
+    parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
 }
 
-void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end, std::uint16_t port)
+void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
 {
     TRACE_ERROR(ec);
     if (ec)
@@ -88,7 +89,7 @@ void session::finished_connecting_to_peer(const error_code& ec)
     response_channel.start();
 }
 
-std::pair<std::string, std::uint16_t> session::parse_header(std::size_t size)
+std::string session::parse_header(std::size_t size)
 {
     using boost::lambda::_1;
     char* begin = std::find(header.begin(), header.begin() + size, ' ') + 8;
@@ -96,5 +97,6 @@ std::pair<std::string, std::uint16_t> session::parse_header(std::size_t size)
     char* colon = std::find(begin, end, ':');
     *end = 0;
     // TODO: replace with c++-style conversion
-    return std::make_pair(std::string(begin, colon), colon == end ? default_http_port : std::uint16_t(atoi(colon + 1)));
+    port = (colon == end ? default_http_port : std::uint16_t(atoi(colon + 1)));
+    return std::string(begin, colon);
 }

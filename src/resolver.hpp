@@ -41,14 +41,14 @@ protected:
     void finished_waiting_timer(const error_code& ec);
 
     static void finished_resolve_raw(dns_ctx* ctx, void* result, void* data);
-    void finished_resolve(int status, const dns_rr_a4& response, const callback& completion);
+    static void finished_resolve(int status, const dns_rr_a4& response, const callback& completion);
 
 private:
     typedef boost::function<void (int, const dns_rr_a4&)> resolve_callback_internal;
     ip::udp::socket socket;
     deadline_timer timer;
     dns_ctx* context;
-    logging::sources::channel_logger<> log;
+    static logging::sources::channel_logger<> log;
 };
 
 void init_resolver();
