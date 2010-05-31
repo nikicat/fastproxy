@@ -12,6 +12,7 @@
 
 #include "session.hpp"
 #include "proxy.hpp"
+#include "statistics.hpp"
 
 channel_logger session::log = channel_logger(logging::keywords::channel = "session");
 
@@ -39,17 +40,26 @@ void session::finish(const error_code& ec)
     opened_channels--;
     TRACE_ERROR(ec);
     if (opened_channels == 0)
+    {
+        statistics::push("finished session", timer.elapsed());
         parent_proxy.finished_session(this, ec);
+    }
+    else
+    {
+        statistics::push("finished channel", timer.elapsed());
+    }
 }
 
 void session::start_receive_header()
 {
+    timer.restart();
     requester.async_receive(buffer(header), requester.message_peek, boost::bind(&session::finished_receive_header, this,
             placeholders::error(), placeholders::bytes_transferred));
 }
 
 void session::finished_receive_header(const error_code& ec, std::size_t bytes_transferred)
 {
+    statistics::push("receive header", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -59,11 +69,13 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
 void session::start_resolving(const char* peer)
 {
     TRACE() << peer << ":" << port;
+    timer.restart();
     parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
 }
 
 void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
 {
+    statistics::push("resolving", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -74,14 +86,17 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
 void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 {
     TRACE() << peer;
+    timer.restart();
     responder.async_connect(peer, boost::bind(&session::finished_connecting_to_peer, this, placeholders::error()));
 }
 
 void session::finished_connecting_to_peer(const error_code& ec)
 {
+    statistics::push("connecting", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
+    timer.restart();
     opened_channels++;
     request_channel.start();
     opened_channels++;

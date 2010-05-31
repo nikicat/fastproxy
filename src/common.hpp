@@ -12,6 +12,7 @@
 #include <boost/log/sources/channel_logger.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
+#include <boost/timer.hpp>
 
 #ifdef NOTRACE
 #define TRACE() while (false) BOOST_LOG(log)

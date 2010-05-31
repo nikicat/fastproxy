@@ -56,6 +56,7 @@ private:
     int opened_channels;
     boost::function<void (const error_code&, resolver::const_iterator, resolver::const_iterator)> resolve_handler;
     std::uint16_t port;
+    boost::timer timer;
     static channel_logger log;
 };
 

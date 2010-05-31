@@ -58,8 +58,6 @@ channel::~channel()
 
 void channel::start()
 {
-    //sources::channel_logger<> new_log(keywords::channel = (boost::format("channel %1%->%2%") % input.native() % output.native()).str());
-    //log.swap(new_log);
     start_waiting();
 }
 
@@ -149,7 +147,7 @@ void channel::finish(const boost::system::error_code& ec)
 
 void channel::splice(int from, int to, long& spliced, boost::system::error_code& ec)
 {
-    spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | MSG_NOSIGNAL);
+    spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | SPLICE_F_MORE | MSG_NOSIGNAL);
     if (spliced == -1)
     {
         ec = boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t> (errno));
@@ -161,8 +159,3 @@ void channel::splice(int from, int to, long& spliced, boost::system::error_code&
     }
     TRACE() << spliced << " bytes";
 }
-
-//auto channel::get_handler()
-//{
-//    return boost::bind(&channel::finished_waiting_output, this, placeholders::error);
-//}

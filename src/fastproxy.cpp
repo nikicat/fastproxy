@@ -19,6 +19,8 @@
 #include <boost/log/utility/init/common_attributes.hpp>
 #include <boost/log/filters.hpp>
 
+#include <pthread.h>
+
 #include "proxy.hpp"
 #include "common.hpp"
 
@@ -60,11 +62,26 @@ void init_logging()
 //    );
 }
 
+void init_signals()
+{
+    sigset_t set;
+
+    sigemptyset(&set);
+    sigaddset(&set, SIGPIPE);
+    int s = pthread_sigmask(SIG_BLOCK, &set, 0);
+    if (s != 0)
+    {
+        perror("pthread_sigmask");
+        exit(EXIT_FAILURE);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     po::variables_map vm = parse_config(argc, argv);
     init_logging();
     init_resolver();
+    init_signals();
 
     ip::tcp::endpoint inbound(ip::tcp::v4(), vm["listen"].as<boost::uint16_t> ());
     ip::udp::endpoint outbound(ip::address::from_string(vm["outgoing"].as<std::string> ()), 0);
