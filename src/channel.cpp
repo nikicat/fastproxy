@@ -6,6 +6,7 @@
  */
 
 #include <iostream>
+#include <boost/bind.hpp>
 #include <boost/format.hpp>
 #include <boost/log/sources/channel_feature.hpp>
 
@@ -17,6 +18,21 @@ using namespace boost::system;
 
 const long PIPE_SIZE = 65536;
 
+void* asio_handler_allocate(std::size_t s, handler_t** h)
+{
+    return *h + 1;
+}
+
+void asio_handler_deallocate(void* pointer, std::size_t size, handler_t** h)
+{
+}
+
+template <typename Function>
+void asio_handler_invoke(Function function, handler_t** h)
+{
+    (**h)(function.arg1_, function.arg2_);
+}
+
 channel_logger channel::log = channel_logger(boost::log::keywords::channel = "channel");
 
 channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session)
@@ -24,12 +40,20 @@ channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* paren
     , output(output)
     , pipe_size(0)
     , parent_session(parent_session)
+    , input_handler(boost::bind(&channel::finished_waiting_input, this, placeholders::error(), placeholders::bytes_transferred()))
+    , output_handler(boost::bind(&channel::finished_waiting_output,this, placeholders::error(), placeholders::bytes_transferred()))
 {
     if (pipe2(pipe, O_NONBLOCK) == -1)
     {
         perror("pipe2");
         throw boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t> (errno));
     }
+}
+
+channel::~channel()
+{
+    close(pipe[0]);
+    close(pipe[1]);
 }
 
 void channel::start()
@@ -42,16 +66,16 @@ void channel::start()
 void channel::start_waiting_input()
 {
     TRACE();
-    input.async_read_some(null_buffers(), boost::bind(&channel::finished_waiting_input, this, placeholders::error));
+    input.async_read_some(null_buffers(), &input_handler);
 }
 
 void channel::start_waiting_output()
 {
     TRACE();
-    output.async_write_some(null_buffers(), boost::bind(&channel::finished_waiting_output, this, placeholders::error));
+    output.async_write_some(null_buffers(), &output_handler);
 }
 
-void channel::finished_waiting_input(const boost::system::error_code& ec)
+void channel::finished_waiting_input(const boost::system::error_code& ec, std::size_t)
 {
     TRACE_ERROR(ec);
     if (ec)
@@ -60,7 +84,7 @@ void channel::finished_waiting_input(const boost::system::error_code& ec)
     splice_from_input();
 }
 
-void channel::finished_waiting_output(const boost::system::error_code& ec)
+void channel::finished_waiting_output(const boost::system::error_code& ec, std::size_t)
 {
     TRACE_ERROR(ec);
     if (ec)
@@ -125,7 +149,7 @@ void channel::finish(const boost::system::error_code& ec)
 
 void channel::splice(int from, int to, long& spliced, boost::system::error_code& ec)
 {
-    spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK);
+    spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | MSG_NOSIGNAL);
     if (spliced == -1)
     {
         ec = boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t> (errno));
@@ -137,3 +161,8 @@ void channel::splice(int from, int to, long& spliced, boost::system::error_code&
     }
     TRACE() << spliced << " bytes";
 }
+
+//auto channel::get_handler()
+//{
+//    return boost::bind(&channel::finished_waiting_output, this, placeholders::error);
+//}

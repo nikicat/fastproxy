@@ -44,7 +44,7 @@ void session::finish(const error_code& ec)
 void session::start_receive_header()
 {
     requester.async_receive(buffer(header), requester.message_peek, boost::bind(&session::finished_receive_header, this,
-            placeholders::error, placeholders::bytes_transferred));
+            placeholders::error(), placeholders::bytes_transferred));
 }
 
 void session::finished_receive_header(const error_code& ec, std::size_t bytes_transferred)
@@ -59,7 +59,7 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
 void session::start_resolving(const std::pair<std::string, std::uint16_t>& peer)
 {
     TRACE() << peer.first << ":" << peer.second;
-    parent_proxy.get_resolver().async_resolve(peer.first, boost::bind(&session::finished_resolving, this, placeholders::error, _2, _3, peer.second));
+    parent_proxy.get_resolver().async_resolve(peer.first, boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3, peer.second));
 }
 
 void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end, std::uint16_t port)
@@ -74,7 +74,7 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
 void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 {
     TRACE() << peer;
-    responder.async_connect(peer, boost::bind(&session::finished_connecting_to_peer, this, placeholders::error));
+    responder.async_connect(peer, boost::bind(&session::finished_connecting_to_peer, this, placeholders::error()));
 }
 
 void session::finished_connecting_to_peer(const error_code& ec)

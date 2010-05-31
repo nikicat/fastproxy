@@ -10,6 +10,8 @@
 
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/sources/channel_logger.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 #ifdef NOTRACE
 #define TRACE() while (false) BOOST_LOG(log)
@@ -18,6 +20,8 @@
 #define TRACE() BOOST_LOG(log) << __func__ << " "
 #define TRACE_ERROR(ec) BOOST_LOG(log) << system_error(ec, __func__).what()
 #endif
+
+namespace boost { namespace asio {} }
 
 using namespace boost::asio;
 using boost::system::system_error;
