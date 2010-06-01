@@ -43,13 +43,13 @@ void session::finish(const error_code& ec)
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
     if (opened_channels == 0)
     {
-        statistics::push("session", timer.elapsed());
+        statistics::push("sesstm", timer.elapsed());
         parent_proxy.finished_session(this, ec ? ec : prev_ec);
     }
     else
     {
         prev_ec = ec;
-        statistics::push("channel", timer.elapsed());
+        statistics::push("chantm", timer.elapsed());
     }
 }
 
@@ -62,7 +62,7 @@ void session::start_receive_header()
 
 void session::finished_receive_header(const error_code& ec, std::size_t bytes_transferred)
 {
-    statistics::push("header", timer.elapsed());
+    statistics::push("headtm", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -78,7 +78,7 @@ void session::start_resolving(const char* peer)
 
 void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
 {
-    statistics::push("resolve", timer.elapsed());
+    statistics::push("restm", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -95,7 +95,7 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 
 void session::finished_connecting_to_peer(const error_code& ec)
 {
-    statistics::push("connect", timer.elapsed());
+    statistics::push("contm", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);

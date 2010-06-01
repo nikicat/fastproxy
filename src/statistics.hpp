@@ -61,7 +61,7 @@ private:
 
         virtual void dump(std::ostream& stream, std::size_t count) const
         {
-            stream << average(begin(count), end(count)) << " " << *std::max_element(begin(count), end(count));
+            stream << impl.back() << " " << average(begin(count), end(count)) << " " << *std::max_element(begin(count), end(count));
         }
 
     protected:

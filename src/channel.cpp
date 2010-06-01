@@ -143,7 +143,7 @@ void channel::start_waiting()
 
 void channel::finish(const error_code& ec)
 {
-    statistics::push("splice_cnt", splices_count);
+    statistics::push("splcnt", splices_count);
     parent_session->finish(ec);
 }
 

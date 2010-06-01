@@ -57,7 +57,7 @@ void statistics::dump(std::size_t count) const
     std::ostringstream stream;
     for (queues_t::const_iterator it = queues.begin(); it != queues.end(); ++it)
     {
-        stream << it->first << ": " << std::fixed << std::setprecision(4)
+        stream << it->first << ":" << std::fixed << std::setprecision(4)
                << std::setfill('0') << dumper(it->second, count) << "\t";
     }
     BOOST_LOG_SEV(log, severity_level::info) << stream.str();
