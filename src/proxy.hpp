@@ -19,7 +19,7 @@ class session;
 class proxy : public boost::noncopyable
 {
 public:
-    proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server);
+    proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http, const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server);
 
     // called by main (parent)
     void start();
@@ -36,16 +36,12 @@ protected:
     void handle_accept(const boost::system::error_code& ec, session* new_session);
     void start_session(session* new_session);
 
-    void start_waiting_dump_statistics();
-    void finished_waiting_dump_statistics(const error_code& ec);
-
 private:
     typedef std::set<session*> session_cont;
     ip::tcp::acceptor acceptor;
     resolver resolver_;
     session_cont sessions;
-    asio::deadline_timer timer;
-    static const std::size_t dump_interval = 3;
+    ip::tcp::endpoint outbound_http;
     static logger log;
 };
 

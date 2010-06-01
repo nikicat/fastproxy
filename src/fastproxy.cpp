@@ -22,6 +22,7 @@
 #include <pthread.h>
 
 #include "proxy.hpp"
+#include "statistics.hpp"
 #include "common.hpp"
 
 namespace po = boost::program_options;
@@ -31,9 +32,12 @@ po::variables_map parse_config(int argc, char* argv[])
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "produce help message")
-            ("listen", po::value<boost::uint16_t>()->required(), "listening port")
-            ("outgoing", po::value<std::string>()->required(), "outgoing address")
-            ("name-server", po::value<std::string>()->required(), "name server address");
+            ("inbound", po::value<ip::tcp::endpoint>()->required(), "listening address")
+            ("outbound-http", po::value<ip::tcp::endpoint>()->required(), "outgoing address for HTTP requests")
+            ("outbound-ns", po::value<ip::udp::endpoint>()->required(), "outgoing address for NS lookup")
+            ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
+            ("stat-output", po::value<std::string>()->required(), "output for statistics")
+            ("stat-interval", po::value<int>()->required(), "interval of statistics dumping");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -76,6 +80,31 @@ void init_signals()
     }
 }
 
+statistics* init_statistics(asio::io_service& io, const po::variables_map& vm)
+{
+    return new statistics(io, vm["stat-output"].as<std::string>(), vm["stat-interval"].as<int>());
+}
+
+proxy* init_proxy(asio::io_service& io, const po::variables_map& vm)
+{
+    return new proxy(io, vm["inbound"].as<ip::tcp::endpoint>(),
+            vm["outbound-http"].as<ip::tcp::endpoint>(),
+            vm["outbound-ns"].as<ip::udp::endpoint>(),
+            vm["name-server"].as<ip::udp::endpoint>());
+}
+
+template<class stream_type, class protocol>
+bool operator >> (stream_type& stream, ip::basic_endpoint<protocol>& endpoint)
+{
+    std::string str;
+    stream >> str;
+    std::string::iterator colon = std::find(str.begin(), str.end(), ':');
+    endpoint.address(ip::address::from_string(std::string(str.begin(), colon)));
+    if (colon != str.end())
+        endpoint.port(atoi(&*colon + 1));
+    return true;
+}
+
 int main(int argc, char* argv[])
 {
     po::variables_map vm = parse_config(argc, argv);
@@ -83,13 +112,12 @@ int main(int argc, char* argv[])
     init_resolver();
     init_signals();
 
-    ip::tcp::endpoint inbound(ip::tcp::v4(), vm["listen"].as<boost::uint16_t> ());
-    ip::udp::endpoint outbound(ip::address::from_string(vm["outgoing"].as<std::string> ()), 0);
-    ip::udp::endpoint name_server(ip::address::from_string(vm["name-server"].as<std::string> ()), 53);
-
     asio::io_service io;
-    proxy p(io, inbound, outbound, name_server);
-    p.start();
+    std::unique_ptr<statistics> s(init_statistics(io, vm));
+    std::unique_ptr<proxy> p(init_proxy(io, vm));
+
+    s->start();
+    p->start();
 
     io.run();
 

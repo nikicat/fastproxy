@@ -14,10 +14,10 @@
 
 logger proxy::log = logger(keywords::channel = "proxy");
 
-proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server)
+proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http, const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server)
     : acceptor(io, inbound)
-    , resolver_(io, outbound, name_server)
-    , timer(io)
+    , resolver_(io, outbound_ns, name_server)
+    , outbound_http(outbound_http)
 {
     TRACE() << "start listening on " << inbound;
     acceptor.listen();
@@ -26,7 +26,6 @@ proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::u
 // called by main (parent)
 void proxy::start()
 {
-    start_waiting_dump_statistics();
     start_accept();
     resolver_.start();
 }
@@ -68,23 +67,4 @@ void proxy::start_session(session* new_session)
     sessions.insert(new_session);
     new_session->start();
     start_accept();
-}
-
-void proxy::start_waiting_dump_statistics()
-{
-    timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, dump_interval));
-    timer.async_wait(boost::bind(&proxy::finished_waiting_dump_statistics, this, placeholders::error));
-}
-
-void proxy::finished_waiting_dump_statistics(const error_code& ec)
-{
-    TRACE_ERROR(ec);
-    if (ec)
-        return;
-
-    statistics::instance().dump(std::cout, 100);
-    statistics::instance().dump(std::cout);
-    std::cerr << std::endl;
-
-    start_waiting_dump_statistics();
 }

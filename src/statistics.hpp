@@ -9,14 +9,21 @@
 #define STATISTICS_HPP_
 
 #include <vector>
-#include <map>
 #include <algorithm>
-#include <iostream>
+#include <fstream>
 #include <numeric>
+#include <boost/ptr_container/ptr_map.hpp>
+#include <boost/asio.hpp>
+
+#include "common.hpp"
 
 class statistics
 {
 public:
+    statistics(asio::io_service& io, const std::string& path, int seconds);
+
+    void start();
+
     static statistics& instance();
 
     template<typename value_t>
@@ -28,7 +35,8 @@ public:
     void dump(std::ostream& stream, std::size_t count = 0) const;
 
 private:
-    ~statistics();
+    void start_waiting_dump();
+    void finished_waiting_dump(const error_code& ec);
 
     class dumper;
     friend std::ostream& operator << (std::ostream& stream, const dumper& dumper);
@@ -78,8 +86,14 @@ private:
     private:
         impl_t impl;
     };
-    typedef std::map<const char*, queue*> queues_t;
+    typedef boost::ptr_map<const char*, queue> queues_t;
     queues_t queues;
+    asio::deadline_timer dump_timer;
+    asio::deadline_timer::duration_type dump_interval;
+    std::ofstream output;
+
+    static statistics* instance_;
+    static logger log;
 };
 
 template<typename value_t>
@@ -94,7 +108,7 @@ void statistics::push_(const char* name, value_type value)
     typedef queue_t<value_type> queue_type;
     queues_t::iterator it = queues.find(name);
     if (it == queues.end())
-        it = queues.insert(std::make_pair(name, new queue_type)).first;
+        it = queues.insert(name, new queue_type).first;
     dynamic_cast<queue_type*>(it->second)->push(value);
 }
 
