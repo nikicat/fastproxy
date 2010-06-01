@@ -7,6 +7,7 @@
 
 #include <iomanip>
 #include <boost/bind.hpp>
+#include <boost/date_time.hpp>
 
 #include "statistics.hpp"
 
@@ -51,14 +52,15 @@ statistics::statistics(asio::io_service& io, const std::string& path, int second
     instance_ = this;
 }
 
-void statistics::dump(std::ostream& stream, std::size_t count) const
+void statistics::dump(std::size_t count) const
 {
+    std::ostringstream stream;
     for (queues_t::const_iterator it = queues.begin(); it != queues.end(); ++it)
     {
-        stream << std::fixed << std::setw(10) << std::setprecision(4) << std::setfill('0')
-                << it->first << ": " << dumper(it->second, count) << "\t";
+        stream << it->first << ": " << std::fixed << std::setprecision(4)
+               << std::setfill('0') << dumper(it->second, count) << "\t";
     }
-    stream << std::endl;
+    BOOST_LOG_SEV(log, severity_level::info) << stream.str();
 }
 
 void statistics::start()
@@ -78,9 +80,8 @@ void statistics::finished_waiting_dump(const error_code& ec)
     if (ec)
         return;
 
-    dump(output, 100);
-    dump(output);
-    output << std::endl;
+    dump(100);
+    dump();
 
     start_waiting_dump();
 }

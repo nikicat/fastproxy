@@ -32,7 +32,7 @@ public:
     template<typename value_t>
     void push_(const char* name, value_t value);
 
-    void dump(std::ostream& stream, std::size_t count = 0) const;
+    void dump(std::size_t count = 0) const;
 
 private:
     void start_waiting_dump();
