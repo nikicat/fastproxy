@@ -65,6 +65,7 @@ void proxy::handle_accept(const boost::system::error_code& ec, session* new_sess
 void proxy::start_session(session* new_session)
 {
     sessions.insert(new_session);
+    statistics::push("sess", sessions.size());
     new_session->start();
     start_accept();
 }
