@@ -29,7 +29,6 @@ typedef boost::log::sources::severity_channel_logger<severity_level, std::string
 
 namespace boost { namespace asio { namespace ip {} namespace placeholders {} } }
 
-//using namespace boost::asio;
 using boost::system::system_error;
 using boost::system::error_code;
 namespace keywords = boost::log::keywords;

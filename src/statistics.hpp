@@ -8,7 +8,7 @@
 #ifndef STATISTICS_HPP_
 #define STATISTICS_HPP_
 
-#include <vector>
+#include <deque>
 #include <algorithm>
 #include <fstream>
 #include <numeric>
@@ -54,6 +54,8 @@ private:
     public:
         void push(value_type elem)
         {
+            if (impl.size() == max_size)
+                impl.pop_front();
             impl.push_back(elem);
         }
 
@@ -63,7 +65,7 @@ private:
         }
 
     protected:
-        typedef std::vector<value_type> impl_t;
+        typedef std::deque<value_type> impl_t;
 
         typename impl_t::const_iterator begin(std::size_t count) const
         {
@@ -85,6 +87,7 @@ private:
         }
     private:
         impl_t impl;
+        static const std::size_t max_size = 10000;
     };
     typedef boost::ptr_map<const char*, queue> queues_t;
     queues_t queues;

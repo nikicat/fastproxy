@@ -37,7 +37,8 @@ po::variables_map parse_config(int argc, char* argv[])
             ("outbound-ns", po::value<ip::udp::endpoint>()->required(), "outgoing address for NS lookup")
             ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
             ("stat-output", po::value<std::string>()->required(), "output for statistics")
-            ("stat-interval", po::value<int>()->required(), "interval of statistics dumping");
+            ("stat-interval", po::value<int>()->required(), "interval of statistics dumping")
+            ("log-level", po::value<int>()->required(), "logging level");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -52,7 +53,7 @@ po::variables_map parse_config(int argc, char* argv[])
     return vm;
 }
 
-void init_logging()
+void init_logging(const po::variables_map& vm)
 {
     boost::log::add_common_attributes();
     boost::log::init_log_to_console
@@ -62,7 +63,7 @@ void init_logging()
     );
     boost::log::core::get()->set_filter
     (
-        boost::log::filters::attr<severity_level>("Severity") >= severity_level::debug
+        boost::log::filters::attr<severity_level>("Severity") >= vm["log-level"].as<int>()
     );
 }
 
@@ -108,7 +109,7 @@ bool operator >> (stream_type& stream, ip::basic_endpoint<protocol>& endpoint)
 int main(int argc, char* argv[])
 {
     po::variables_map vm = parse_config(argc, argv);
-    init_logging();
+    init_logging(vm);
     init_resolver();
     init_signals();
 
