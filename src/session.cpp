@@ -14,9 +14,9 @@
 #include "proxy.hpp"
 #include "statistics.hpp"
 
-channel_logger session::log = channel_logger(logging::keywords::channel = "session");
+logger session::log = logger(keywords::channel = "session");
 
-session::session(io_service& io, proxy& parent_proxy)
+session::session(asio::io_service& io, proxy& parent_proxy)
     : parent_proxy(parent_proxy), requester(io), responder(io), resolver(io)
     , request_channel(requester, responder, this)
     , response_channel(responder, requester, this)
@@ -39,13 +39,16 @@ void session::finish(const error_code& ec)
 {
     opened_channels--;
     TRACE_ERROR(ec);
+    if (ec)
+        BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
     if (opened_channels == 0)
     {
         statistics::push("session", timer.elapsed());
-        parent_proxy.finished_session(this, ec);
+        parent_proxy.finished_session(this, ec ? ec : prev_ec);
     }
     else
     {
+        prev_ec = ec;
         statistics::push("channel", timer.elapsed());
     }
 }
@@ -53,7 +56,7 @@ void session::finish(const error_code& ec)
 void session::start_receive_header()
 {
     timer.restart();
-    requester.async_receive(buffer(header), requester.message_peek, boost::bind(&session::finished_receive_header, this,
+    requester.async_receive(asio::buffer(header), requester.message_peek, boost::bind(&session::finished_receive_header, this,
             placeholders::error(), placeholders::bytes_transferred));
 }
 

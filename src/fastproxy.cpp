@@ -50,16 +50,16 @@ po::variables_map parse_config(int argc, char* argv[])
 
 void init_logging()
 {
-    logging::add_common_attributes();
-    logging::init_log_to_console
+    boost::log::add_common_attributes();
+    boost::log::init_log_to_console
     (
             std::clog,
-            logging::keywords::format = "[%TimeStamp%]: %Channel%: %_%"
+            keywords::format = "[%TimeStamp%]: %Channel%: %_%"
     );
-//    boost::log::core::get()->set_filter
-//    (
-//        boost::log::filters::attr<boost::log::trivial::severity_level>("Severity") >= boost::log::trivial::debug
-//    );
+    boost::log::core::get()->set_filter
+    (
+        boost::log::filters::attr<severity_level>("Severity") >= severity_level::debug
+    );
 }
 
 void init_signals()
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     ip::udp::endpoint outbound(ip::address::from_string(vm["outgoing"].as<std::string> ()), 0);
     ip::udp::endpoint name_server(ip::address::from_string(vm["name-server"].as<std::string> ()), 53);
 
-    io_service io;
+    asio::io_service io;
     proxy p(io, inbound, outbound, name_server);
     p.start();
 

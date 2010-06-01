@@ -25,7 +25,7 @@ public:
     typedef const ip::address_v4* const_iterator;
     typedef boost::function<void (const boost::system::error_code&, const_iterator, const_iterator)> callback;
 
-    resolver(io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server);
+    resolver(asio::io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server);
     ~resolver();
 
     void start();
@@ -44,9 +44,9 @@ protected:
 private:
     typedef boost::function<void (int, const dns_rr_a4&)> resolve_callback_internal;
     ip::udp::socket socket;
-    deadline_timer timer;
+    asio::deadline_timer timer;
     dns_ctx* context;
-    static logging::sources::channel_logger<> log;
+    static logger log;
 };
 
 void init_resolver();

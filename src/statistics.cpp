@@ -5,20 +5,9 @@
  *      Author: nbryskin
  */
 
-#include <numeric>
-#include <algorithm>
-#include <iostream>
 #include <iomanip>
 
 #include "statistics.hpp"
-
-template<typename Iterator>
-typename Iterator::value_type average(Iterator begin, Iterator end)
-{
-    if (begin == end)
-        return 0;
-    return std::accumulate(begin, end, typename Iterator::value_type()) / (end - begin);
-}
 
 statistics& statistics::instance()
 {
@@ -26,27 +15,43 @@ statistics& statistics::instance()
     return instance_;
 }
 
-void statistics::push(const char* name, double elapsed)
+statistics::~statistics()
 {
-    instance().push_(name, elapsed);
+    for (queues_t::const_iterator it = queues.begin(); it != queues.end(); ++it)
+        delete it->second;
 }
 
-void statistics::push_(const char* name, double elapsed)
+class statistics::dumper
 {
-    queues[name].push_back(elapsed);
+public:
+    dumper(statistics::queue* q, std::size_t count)
+    : q(q)
+    , count(count)
+    {
+    }
+
+    void dump(std::ostream& stream) const
+    {
+        q->dump(stream, count);
+    }
+
+private:
+    queue* q;
+    std::size_t count;
+};
+
+std::ostream& operator << (std::ostream& stream, const statistics::dumper& dumper)
+{
+    dumper.dump(stream);
+    return stream;
 }
 
 void statistics::dump(std::ostream& stream, std::size_t count) const
 {
-    for(queues_t::const_iterator times = queues.begin(); times != queues.end(); ++times)
+    for (queues_t::const_iterator it = queues.begin(); it != queues.end(); ++it)
     {
-        count = count ? std::min(count, times->second.size()) : times->second.size();
-        times_t::const_iterator begin = times->second.begin() + times->second.size() - count;
-        times_t::const_iterator end = times->second.end();
         stream << std::fixed << std::setw(10) << std::setprecision(4) << std::setfill('0')
-                << times->first << ": "
-                << average(begin, end) << " "
-                << *std::max_element(begin, end) << "\t";
+                << it->first << ": " << dumper(it->second, count) << "\t";
     }
     stream << std::endl;
 }

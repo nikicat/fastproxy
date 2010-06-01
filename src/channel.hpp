@@ -21,7 +21,6 @@ void asio_handler_invoke(Function function, handler_t** h);
 #include <boost/asio.hpp>
 #include <boost/utility.hpp>
 
-using namespace boost::asio;
 using boost::system::error_code;
 
 class session;
@@ -56,8 +55,8 @@ private:
     int pipe[2];
     long pipe_size;
     session* parent_session;
-    static channel_logger log;
-    static const std::size_t size_of_operation = sizeof(detail::null_buffers_op<handler_t*>);
+    static logger log;
+    static const std::size_t size_of_operation = sizeof(asio::detail::null_buffers_op<handler_t*>);
     handler_t input_handler;
     char space_for_input_op[size_of_operation];
     handler_t output_handler;

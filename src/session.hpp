@@ -21,7 +21,7 @@ class proxy;
 class session : public boost::noncopyable
 {
 public:
-    session(io_service& io, proxy& parent_proxy);
+    session(asio::io_service& io, proxy& parent_proxy);
 
     ip::tcp::socket& socket();
 
@@ -57,7 +57,8 @@ private:
     boost::function<void (const error_code&, resolver::const_iterator, resolver::const_iterator)> resolve_handler;
     std::uint16_t port;
     boost::timer timer;
-    static channel_logger log;
+    error_code prev_ec;
+    static logger log;
 };
 
 typedef boost::shared_ptr<session> session_ptr;

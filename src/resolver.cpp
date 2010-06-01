@@ -9,14 +9,14 @@
 #include <boost/log/sources/channel_feature.hpp>
 #include "resolver.hpp"
 
+logger resolver::log = logger(keywords::channel = "proxy");
+
 void init_resolver()
 {
     dns_init(0, 0);
 }
 
-logging::sources::channel_logger<> resolver::log = logging::sources::channel_logger<>(logging::keywords::channel = "proxy");
-
-resolver::resolver(io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server)
+resolver::resolver(asio::io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server)
     : socket(io)
     , timer(io)
     , context(dns_new(0))
@@ -50,7 +50,7 @@ void resolver::async_resolve(const char* host_name, const callback& completion)
 void resolver::start_waiting_receive()
 {
     TRACE();
-    socket.async_receive(null_buffers(), boost::bind(&resolver::finished_waiting_receive, this, placeholders::error));
+    socket.async_receive(asio::null_buffers(), boost::bind(&resolver::finished_waiting_receive, this, placeholders::error));
 }
 
 void resolver::finished_waiting_receive(const boost::system::error_code& ec)
@@ -71,7 +71,7 @@ void resolver::start_waiting_timer()
     TRACE() << seconds;
     if (seconds < 0)
         return;
-    timer.expires_from_now(deadline_timer::duration_type(0, 0, seconds));
+    timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, seconds));
     timer.async_wait(boost::bind(&resolver::finished_waiting_timer, this, placeholders::error));
 }
 

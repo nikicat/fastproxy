@@ -14,7 +14,6 @@
 #include "session.hpp"
 #include "statistics.hpp"
 
-using namespace boost::log;
 using namespace boost::system;
 
 const long PIPE_SIZE = 65536;
@@ -34,7 +33,7 @@ void asio_handler_invoke(Function function, handler_t** h)
     (**h)(function.arg1_, function.arg2_);
 }
 
-channel_logger channel::log = channel_logger(boost::log::keywords::channel = "channel");
+logger channel::log = logger(keywords::channel = "channel");
 
 channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session)
     : input(input)
@@ -66,16 +65,16 @@ void channel::start()
 void channel::start_waiting_input()
 {
     TRACE();
-    input.async_read_some(null_buffers(), &input_handler);
+    input.async_read_some(asio::null_buffers(), &input_handler);
 }
 
 void channel::start_waiting_output()
 {
     TRACE();
-    output.async_write_some(null_buffers(), &output_handler);
+    output.async_write_some(asio::null_buffers(), &output_handler);
 }
 
-void channel::finished_waiting_input(const boost::system::error_code& ec, std::size_t)
+void channel::finished_waiting_input(const error_code& ec, std::size_t)
 {
     TRACE_ERROR(ec);
     if (ec)
@@ -84,7 +83,7 @@ void channel::finished_waiting_input(const boost::system::error_code& ec, std::s
     splice_from_input();
 }
 
-void channel::finished_waiting_output(const boost::system::error_code& ec, std::size_t)
+void channel::finished_waiting_output(const error_code& ec, std::size_t)
 {
     TRACE_ERROR(ec);
     if (ec)
@@ -98,7 +97,7 @@ void channel::splice_from_input()
     if (input.available() == 0)
     {
         TRACE() << "requester connection closed";
-        return finish(boost::system::errc::make_error_code(boost::system::errc::not_connected));
+        return finish(error_code());
     }
 
     long spliced;
@@ -142,13 +141,13 @@ void channel::start_waiting()
         start_waiting_input();
 }
 
-void channel::finish(const boost::system::error_code& ec)
+void channel::finish(const error_code& ec)
 {
     statistics::push("splice_cnt", splices_count);
     parent_session->finish(ec);
 }
 
-void channel::splice(int from, int to, long& spliced, boost::system::error_code& ec)
+void channel::splice(int from, int to, long& spliced, error_code& ec)
 {
     splices_count++;
     spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | SPLICE_F_MORE | MSG_NOSIGNAL);

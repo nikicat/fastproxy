@@ -12,9 +12,9 @@
 #include "statistics.hpp"
 #include "session.hpp"
 
-logging::sources::channel_logger<> proxy::log = logging::sources::channel_logger<>(logging::keywords::channel = "proxy");
+logger proxy::log = logger(keywords::channel = "proxy");
 
-proxy::proxy(io_service& io, const ip::tcp::endpoint& inbound, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server)
+proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server)
     : acceptor(io, inbound)
     , resolver_(io, outbound, name_server)
     , timer(io)
@@ -72,7 +72,7 @@ void proxy::start_session(session* new_session)
 
 void proxy::start_waiting_dump_statistics()
 {
-    timer.expires_from_now(deadline_timer::duration_type(0, 0, dump_interval));
+    timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, dump_interval));
     timer.async_wait(boost::bind(&proxy::finished_waiting_dump_statistics, this, placeholders::error));
 }
 
