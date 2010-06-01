@@ -42,8 +42,9 @@ void session::finish(const error_code& ec)
     if (ec)
     {
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
-        requester.close();
-        responder.close();
+        error_code tmp_ec;
+        requester.cancel(tmp_ec);
+        responder.cancel(tmp_ec);
     }
     if (opened_channels == 0)
     {
