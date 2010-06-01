@@ -80,7 +80,6 @@ void statistics::finished_waiting_dump(const error_code& ec)
     if (ec)
         return;
 
-    dump(100);
     dump();
 
     start_waiting_dump();
