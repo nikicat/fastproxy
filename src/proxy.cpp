@@ -42,6 +42,7 @@ void proxy::finished_session(session* session, const boost::system::error_code& 
     TRACE_ERROR(ec);
     sessions.erase(session);
     delete session;
+    update_statistics();
 }
 
 void proxy::start_accept()
@@ -65,7 +66,12 @@ void proxy::handle_accept(const boost::system::error_code& ec, session* new_sess
 void proxy::start_session(session* new_session)
 {
     sessions.insert(new_session);
-    statistics::push("sesscnt", sessions.size());
     new_session->start();
     start_accept();
+    update_statistics();
+}
+
+void proxy::update_statistics()
+{
+    statistics::push("sesscnt", sessions.size());
 }
