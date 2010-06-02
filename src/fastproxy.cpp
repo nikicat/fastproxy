@@ -21,8 +21,10 @@
 
 #include <pthread.h>
 
+#include "fastproxy.hpp"
 #include "proxy.hpp"
 #include "statistics.hpp"
+#include "chater.hpp"
 #include "common.hpp"
 
 namespace po = boost::program_options;
@@ -94,6 +96,11 @@ proxy* init_proxy(asio::io_service& io, const po::variables_map& vm)
             vm["name-server"].as<ip::udp::endpoint>());
 }
 
+chater* init_chater(asio::io_service& io)
+{
+    return new chater(io, 1);
+}
+
 template<class stream_type, class protocol>
 bool operator >> (stream_type& stream, ip::basic_endpoint<protocol>& endpoint)
 {
@@ -106,6 +113,13 @@ bool operator >> (stream_type& stream, ip::basic_endpoint<protocol>& endpoint)
     return true;
 }
 
+proxy* global_proxy;
+
+proxy* find_proxy()
+{
+    return global_proxy;
+}
+
 int main(int argc, char* argv[])
 {
     po::variables_map vm = parse_config(argc, argv);
@@ -116,9 +130,13 @@ int main(int argc, char* argv[])
     asio::io_service io;
     std::unique_ptr<statistics> s(init_statistics(io, vm));
     std::unique_ptr<proxy> p(init_proxy(io, vm));
+    std::unique_ptr<chater> c(init_chater(io));
+
+    global_proxy = p.get();
 
     s->start();
     p->start();
+    c->start();
 
     io.run();
 
