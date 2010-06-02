@@ -35,6 +35,7 @@ public:
 
     enum state
     {
+        created,
         waiting_input,
         waiting_output,
         splicing_input,
@@ -80,6 +81,9 @@ stream_type& operator << (stream_type& stream, channel::state state)
 {
     switch (state)
     {
+        case channel::created:
+            stream << "created";
+            break;
         case channel::waiting_input:
             stream << "waiting_input";
             break;

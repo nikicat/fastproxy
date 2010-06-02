@@ -29,7 +29,7 @@ public:
     void start();
 
     // called by channel (child)
-    void finish(const error_code& ec);
+    void finished_channel(const error_code& ec);
 
     const channel& get_request_channel() const;
     const channel& get_response_channel() const;
@@ -45,6 +45,8 @@ protected:
 
     void start_connecting_to_peer(const ip::tcp::endpoint& peer);
     void finished_connecting_to_peer(const error_code& ec);
+
+    void finish(const error_code& ec);
 
     const char* parse_header(std::size_t size);
 

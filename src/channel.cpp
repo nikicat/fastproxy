@@ -43,6 +43,7 @@ channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* paren
     , input_handler(boost::bind(&channel::finished_waiting_input, this, placeholders::error(), placeholders::bytes_transferred()))
     , output_handler(boost::bind(&channel::finished_waiting_output,this, placeholders::error(), placeholders::bytes_transferred()))
     , splices_count(0)
+    , current_state(created)
 {
     if (pipe2(pipe, O_NONBLOCK) == -1)
     {
@@ -161,7 +162,7 @@ void channel::finish(const error_code& ec)
 {
     current_state = finished;
     statistics::push("splcnt", splices_count);
-    parent_session->finish(ec);
+    parent_session->finished_channel(ec);
 }
 
 void channel::splice(int from, int to, long& spliced, error_code& ec)

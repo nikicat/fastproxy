@@ -35,7 +35,7 @@ void session::start()
     start_receive_header();
 }
 
-void session::finish(const error_code& ec)
+void session::finished_channel(const error_code& ec)
 {
     opened_channels--;
     TRACE_ERROR(ec);
@@ -44,7 +44,7 @@ void session::finish(const error_code& ec)
     if (opened_channels == 0)
     {
         statistics::push("sesstm", timer.elapsed());
-        parent_proxy.finished_session(this, ec ? ec : prev_ec);
+        finish(ec ? ec : prev_ec);
     }
     else
     {
@@ -59,6 +59,11 @@ void session::finish(const error_code& ec)
         }
         statistics::push("chantm", timer.elapsed());
     }
+}
+
+void session::finish(const error_code& ec)
+{
+    parent_proxy.finished_session(this, ec);
 }
 
 void session::start_receive_header()
