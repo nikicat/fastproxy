@@ -96,9 +96,15 @@ void channel::finished_waiting_output(const error_code& ec, std::size_t)
 
 void channel::splice_from_input()
 {
+    if (!input.is_open())
+    {
+        TRACE() << "socket closed";
+        return finish(error_code());
+    }
+
     if (input.available() == 0)
     {
-        TRACE() << "requester connection closed";
+        TRACE() << "connection closed";
         return finish(error_code());
     }
     current_state = splicing_input;
@@ -117,6 +123,12 @@ void channel::splice_from_input()
 
 void channel::splice_to_output()
 {
+    if (!output.is_open())
+    {
+        TRACE() << "socket closed";
+        return finish(error_code());
+    }
+
     current_state = splicing_output;
     long spliced;
     boost::system::error_code ec;

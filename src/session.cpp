@@ -40,12 +40,7 @@ void session::finish(const error_code& ec)
     opened_channels--;
     TRACE_ERROR(ec);
     if (ec)
-    {
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
-        error_code tmp_ec;
-        requester.cancel(tmp_ec);
-        responder.cancel(tmp_ec);
-    }
     if (opened_channels == 0)
     {
         statistics::push("sesstm", timer.elapsed());
@@ -54,6 +49,12 @@ void session::finish(const error_code& ec)
     else
     {
         prev_ec = ec;
+        if (ec)
+        {
+            error_code tmp_ec;
+            requester.close(tmp_ec);
+            responder.close(tmp_ec);
+        }
         statistics::push("chantm", timer.elapsed());
     }
 }
