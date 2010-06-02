@@ -31,6 +31,11 @@ public:
     // called by channel (child)
     void finish(const error_code& ec);
 
+    const channel& get_request_channel() const;
+    const channel& get_response_channel() const;
+
+    bool operator < (const session& other) const;
+
 protected:
     void start_receive_header();
     void finished_receive_header(const error_code& ec, std::size_t bytes_transferred);

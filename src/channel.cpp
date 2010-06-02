@@ -65,12 +65,14 @@ void channel::start()
 void channel::start_waiting_input()
 {
     TRACE();
+    current_state = waiting_input;
     input.async_read_some(asio::null_buffers(), &input_handler);
 }
 
 void channel::start_waiting_output()
 {
     TRACE();
+    current_state = waiting_output;
     output.async_write_some(asio::null_buffers(), &output_handler);
 }
 
@@ -99,6 +101,7 @@ void channel::splice_from_input()
         TRACE() << "requester connection closed";
         return finish(error_code());
     }
+    current_state = splicing_input;
 
     long spliced;
     boost::system::error_code ec;
@@ -114,6 +117,7 @@ void channel::splice_from_input()
 
 void channel::splice_to_output()
 {
+    current_state = splicing_output;
     long spliced;
     boost::system::error_code ec;
     splice(pipe[0], output.native(), spliced, ec);
@@ -161,4 +165,9 @@ void channel::splice(int from, int to, long& spliced, error_code& ec)
             ec.clear();
     }
     TRACE() << spliced << " bytes";
+}
+
+channel::state channel::get_state() const
+{
+    return current_state;
 }

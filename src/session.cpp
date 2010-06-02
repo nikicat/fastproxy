@@ -123,3 +123,18 @@ const char* session::parse_header(std::size_t size)
     port = (colon == end ? default_http_port : std::uint16_t(atoi(colon + 1)));
     return begin;
 }
+
+const channel& session::get_request_channel() const
+{
+    return request_channel;
+}
+
+const channel& session::get_response_channel() const
+{
+    return response_channel;
+}
+
+bool session::operator < (const session& other) const
+{
+    return const_cast<ip::tcp::socket&>(requester).native() < const_cast<ip::tcp::socket&>(other.requester).native();
+}

@@ -8,13 +8,12 @@
 #ifndef PROXY_HPP_
 #define PROXY_HPP_
 
-#include <set>
+#include <boost/ptr_container/ptr_set.hpp>
 #include <boost/asio.hpp>
 
 #include "common.hpp"
 #include "resolver.hpp"
-
-class session;
+#include "session.hpp"
 
 class proxy : public boost::noncopyable
 {
@@ -30,6 +29,8 @@ public:
     // called by session (child)
     void finished_session(session* session, const boost::system::error_code& ec);
 
+    void dump_channels_state() const;
+
 protected:
     void start_accept();
 
@@ -39,7 +40,7 @@ protected:
     void update_statistics();
 
 private:
-    typedef std::set<session*> session_cont;
+    typedef boost::ptr_set<session> session_cont;
     ip::tcp::acceptor acceptor;
     resolver resolver_;
     session_cont sessions;

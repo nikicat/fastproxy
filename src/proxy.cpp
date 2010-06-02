@@ -40,8 +40,7 @@ resolver& proxy::get_resolver()
 void proxy::finished_session(session* session, const boost::system::error_code& ec)
 {
     TRACE_ERROR(ec);
-    sessions.erase(session);
-    delete session;
+    sessions.erase(*session);
     update_statistics();
 }
 
@@ -74,4 +73,13 @@ void proxy::start_session(session* new_session)
 void proxy::update_statistics()
 {
     statistics::push("sesscnt", sessions.size());
+}
+
+void proxy::dump_channels_state() const
+{
+    for (session_cont::const_iterator it = sessions.begin(); it != sessions.end(); ++it)
+    {
+        BOOST_LOG_SEV(log, severity_level::debug) << "reqch: " << it->get_request_channel().get_state()
+                << " rspch: " << it->get_response_channel().get_state();
+    }
 }

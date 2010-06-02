@@ -33,6 +33,15 @@ public:
 
     void start();
 
+    enum state
+    {
+        waiting_input,
+        waiting_output,
+        splicing_input,
+        splicing_output,
+    };
+    state get_state() const;
+
 protected:
     void start_waiting();
     void start_waiting_input();
@@ -62,6 +71,30 @@ private:
     handler_t output_handler;
     char space_for_output_op[size_of_operation];
     std::size_t splices_count;
+    state current_state;
 };
+
+template<class stream_type>
+stream_type& operator << (stream_type& stream, channel::state state)
+{
+    switch (state)
+    {
+        case channel::waiting_input:
+            stream << "waiting_input";
+            break;
+        case channel::waiting_output:
+            stream << "waiting_output";
+            break;
+        case channel::splicing_input:
+            stream << "splicing_input";
+            break;
+        case channel::splicing_output:
+            stream << "splicing_output";
+            break;
+        default:
+            stream << "unknown status";
+    }
+    return stream;
+}
 
 #endif /* CHANNEL_HPP_ */
