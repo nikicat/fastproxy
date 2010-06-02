@@ -39,6 +39,7 @@ public:
         waiting_output,
         splicing_input,
         splicing_output,
+        finished,
     };
     state get_state() const;
 
@@ -90,6 +91,9 @@ stream_type& operator << (stream_type& stream, channel::state state)
             break;
         case channel::splicing_output:
             stream << "splicing_output";
+            break;
+        case channel::finished:
+            stream << "finished";
             break;
         default:
             stream << "unknown status";
