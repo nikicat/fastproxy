@@ -20,7 +20,7 @@ session::session(asio::io_service& io, proxy& parent_proxy)
     : parent_proxy(parent_proxy), requester(io), responder(io), resolver(io)
     , request_channel(requester, responder, this)
     , response_channel(responder, requester, this)
-    , opened_channels(0)
+    , opened_channels(2)
     , resolve_handler(boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3))
 {
 }
@@ -108,9 +108,7 @@ void session::finished_connecting_to_peer(const error_code& ec)
     if (ec)
         return finish(ec);
     timer.restart();
-    opened_channels++;
     request_channel.start();
-    opened_channels++;
     response_channel.start();
 }
 
