@@ -54,6 +54,8 @@ void session::finish(const error_code& ec)
             error_code tmp_ec;
             requester.close(tmp_ec);
             responder.close(tmp_ec);
+            requester.cancel(tmp_ec);
+            responder.cancel(tmp_ec);
         }
         statistics::push("chantm", timer.elapsed());
     }
