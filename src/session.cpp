@@ -140,6 +140,11 @@ const channel& session::get_response_channel() const
     return response_channel;
 }
 
+int session::get_opened_channels() const
+{
+    return opened_channels;
+}
+
 bool session::operator < (const session& other) const
 {
     return const_cast<ip::tcp::socket&>(requester).native() < const_cast<ip::tcp::socket&>(other.requester).native();

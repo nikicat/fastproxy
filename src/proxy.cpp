@@ -79,7 +79,9 @@ void proxy::dump_channels_state() const
 {
     for (session_cont::const_iterator it = sessions.begin(); it != sessions.end(); ++it)
     {
-        BOOST_LOG_SEV(log, severity_level::debug) << "reqch: " << it->get_request_channel().get_state()
-                << " rspch: " << it->get_response_channel().get_state();
+        BOOST_LOG_SEV(log, severity_level::debug)
+                << "reqch: " << it->get_request_channel().get_state()
+                << " rspch: " << it->get_response_channel().get_state()
+                << " opened: " << it->get_opened_channels();
     }
 }

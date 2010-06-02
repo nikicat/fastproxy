@@ -33,6 +33,7 @@ public:
 
     const channel& get_request_channel() const;
     const channel& get_response_channel() const;
+    int get_opened_channels() const;
 
     bool operator < (const session& other) const;
 
