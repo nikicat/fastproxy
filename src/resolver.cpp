@@ -9,9 +9,9 @@
 #include <boost/log/sources/channel_feature.hpp>
 #include "resolver.hpp"
 
-logger resolver::log = logger(keywords::channel = "proxy");
+logger resolver::log = logger(keywords::channel = "resolver");
 
-void init_resolver()
+void resolver::init()
 {
     dns_init(0, 0);
 }

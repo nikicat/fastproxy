@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/system/linux_error.hpp>
-#include <boost/program_options.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/sources/channel_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
@@ -25,11 +24,22 @@
 #include "proxy.hpp"
 #include "statistics.hpp"
 #include "chater.hpp"
-#include "common.hpp"
 
-namespace po = boost::program_options;
+fastproxy* fastproxy::instance_;
 
-po::variables_map parse_config(int argc, char* argv[])
+fastproxy::fastproxy()
+{
+    instance_ = this;
+}
+
+fastproxy& fastproxy::instance()
+{
+    return *instance_;
+}
+
+typedef std::vector<std::string> string_vec;
+
+void fastproxy::parse_config(int argc, char* argv[])
 {
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -40,9 +50,9 @@ po::variables_map parse_config(int argc, char* argv[])
             ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
             ("stat-output", po::value<std::string>()->required(), "output for statistics")
             ("stat-interval", po::value<int>()->required(), "interval of statistics dumping")
-            ("log-level", po::value<int>()->required(), "logging level");
+            ("log-level", po::value<int>()->required(), "logging level")
+            ("log-channel", po::value<string_vec>(), "logging channel");
 
-    po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
@@ -51,25 +61,39 @@ po::variables_map parse_config(int argc, char* argv[])
         std::cout << desc << std::endl;
         exit(1);
     }
-
-    return vm;
 }
 
-void init_logging(const po::variables_map& vm)
+bool check_channel(const std::string& channel)
 {
+    return fastproxy::instance().check_channel_impl(channel);
+}
+
+bool fastproxy::check_channel_impl(const std::string& channel) const
+{
+    return channels.find(channel) != channels.end();
+}
+
+void fastproxy::init_logging()
+{
+    if (vm.count("log-channel"))
+    {
+        auto chans = vm["log-channel"].as<string_vec>();
+        channels.insert(chans.begin(), chans.end());
+    }
     boost::log::add_common_attributes();
     boost::log::init_log_to_console
     (
-            std::clog,
+            std::cerr,
             keywords::format = "[%TimeStamp%]: %Channel%: %_%"
     );
     boost::log::core::get()->set_filter
     (
-        boost::log::filters::attr<severity_level>("Severity") >= vm["log-level"].as<int>()
+        boost::log::filters::attr<severity_level>("Severity") >= vm["log-level"].as<int>() &&
+        boost::log::filters::attr<std::string>("Channel").satisfies(&check_channel)
     );
 }
 
-void init_signals()
+void fastproxy::init_signals()
 {
     sigset_t set;
 
@@ -83,22 +107,27 @@ void init_signals()
     }
 }
 
-statistics* init_statistics(asio::io_service& io, const po::variables_map& vm)
+void fastproxy::init_statistics()
 {
-    return new statistics(io, vm["stat-output"].as<std::string>(), vm["stat-interval"].as<int>());
+    s.reset(new statistics(io, vm["stat-output"].as<std::string>(), vm["stat-interval"].as<int>()));
 }
 
-proxy* init_proxy(asio::io_service& io, const po::variables_map& vm)
+void fastproxy::init_proxy()
 {
-    return new proxy(io, vm["inbound"].as<ip::tcp::endpoint>(),
+    p.reset(new proxy(io, vm["inbound"].as<ip::tcp::endpoint>(),
             vm["outbound-http"].as<ip::tcp::endpoint>(),
             vm["outbound-ns"].as<ip::udp::endpoint>(),
-            vm["name-server"].as<ip::udp::endpoint>());
+            vm["name-server"].as<ip::udp::endpoint>()));
 }
 
-chater* init_chater(asio::io_service& io)
+void fastproxy::init_chater()
 {
-    return new chater(io, 1);
+    c.reset(new chater(io, 1));
+}
+
+void fastproxy::init_resolver()
+{
+    resolver::init();
 }
 
 template<class stream_type, class protocol>
@@ -113,32 +142,36 @@ bool operator >> (stream_type& stream, ip::basic_endpoint<protocol>& endpoint)
     return true;
 }
 
-proxy* global_proxy;
-
-proxy* find_proxy()
+proxy* fastproxy::find_proxy()
 {
-    return global_proxy;
+    return p.get();
 }
 
-int main(int argc, char* argv[])
+void fastproxy::init(int argc, char* argv[])
 {
-    po::variables_map vm = parse_config(argc, argv);
-    init_logging(vm);
+    parse_config(argc, argv);
+    init_logging();
     init_resolver();
     init_signals();
 
-    asio::io_service io;
-    std::unique_ptr<statistics> s(init_statistics(io, vm));
-    std::unique_ptr<proxy> p(init_proxy(io, vm));
-    std::unique_ptr<chater> c(init_chater(io));
+    init_statistics();
+    init_proxy();
+    init_chater();
+}
 
-    global_proxy = p.get();
-
+void fastproxy::run()
+{
     s->start();
     p->start();
     c->start();
 
     io.run();
+}
 
+int main(int argc, char* argv[])
+{
+    fastproxy f;
+    f.init(argc, argv);
+    f.run();
     return 0;
 }

@@ -11,6 +11,7 @@
 #include <boost/asio.hpp>
 #include <iostream>
 
+#include "fastproxy.hpp"
 #include "common.hpp"
 
 class chater
@@ -18,6 +19,7 @@ class chater
 public:
     chater(asio::io_service& io, int fd)
     : stdin(io, fd)
+    , log(keywords::channel = "chater")
     {
     }
     void start()
@@ -50,7 +52,7 @@ private:
 
     void dump_action()
     {
-        proxy* p = find_proxy();
+        proxy* p = fastproxy::instance().find_proxy();
 
         p->dump_channels_state();
     }

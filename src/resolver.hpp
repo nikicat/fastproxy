@@ -25,6 +25,8 @@ public:
     typedef const ip::address_v4* const_iterator;
     typedef boost::function<void (const boost::system::error_code&, const_iterator, const_iterator)> callback;
 
+    static void init();
+
     resolver(asio::io_service& io, const ip::udp::endpoint& outbound, const ip::udp::endpoint& name_server);
     ~resolver();
 
@@ -48,7 +50,5 @@ private:
     dns_ctx* context;
     static logger log;
 };
-
-void init_resolver();
 
 #endif /* RESOLVER_HPP_ */
