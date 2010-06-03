@@ -66,7 +66,6 @@ private:
     int pipe[2];
     long pipe_size;
     session* parent_session;
-    static logger log;
     static const std::size_t size_of_operation = sizeof(asio::detail::null_buffers_op<handler_t*>);
     handler_t input_handler;
     char space_for_input_op[size_of_operation];
@@ -74,6 +73,7 @@ private:
     char space_for_output_op[size_of_operation];
     std::size_t splices_count;
     state current_state;
+    static logger log;
 };
 
 template<class stream_type>

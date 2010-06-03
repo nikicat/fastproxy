@@ -21,7 +21,7 @@
 #define TRACE_ERROR(ec) while (false) BOOST_LOG_SEV(log, severity_level::trace)
 #else
 #define TRACE() BOOST_LOG_SEV(log, severity_level::trace) << __func__ << " "
-#define TRACE_ERROR(ec) BOOST_LOG_SEV(log, severity_level::trace) << system_error(ec, __func__).what()
+#define TRACE_ERROR(ec) BOOST_LOG_SEV(log, severity_level::trace) << system_error(ec, __func__).what() << " "
 #endif
 
 using boost::log::trivial::severity_level;

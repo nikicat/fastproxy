@@ -160,6 +160,7 @@ void channel::start_waiting()
 
 void channel::finish(const error_code& ec)
 {
+    TRACE_ERROR(ec) << parent_session->get_id();
     current_state = finished;
     statistics::push("splcnt", splices_count);
     parent_session->finished_channel(ec);

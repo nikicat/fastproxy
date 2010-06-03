@@ -40,11 +40,11 @@ protected:
     void update_statistics();
 
 private:
-    typedef boost::ptr_set<session> session_cont;
+    typedef boost::ptr_set<session, std::pointer_to_binary_function<const session&, const session&, bool> > session_cont;
     ip::tcp::acceptor acceptor;
     resolver resolver_;
-    session_cont sessions;
     ip::tcp::endpoint outbound_http;
+    session_cont sessions;
     static logger log;
 };
 

@@ -38,7 +38,7 @@ void session::start()
 void session::finished_channel(const error_code& ec)
 {
     opened_channels--;
-    TRACE_ERROR(ec);
+    TRACE_ERROR(ec) << get_id();
     if (ec)
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
     if (opened_channels == 0)
@@ -145,7 +145,7 @@ int session::get_opened_channels() const
     return opened_channels;
 }
 
-bool session::operator < (const session& other) const
+const void* session::get_id() const
 {
-    return const_cast<ip::tcp::socket&>(requester).native() < const_cast<ip::tcp::socket&>(other.requester).native();
+    return this;
 }
