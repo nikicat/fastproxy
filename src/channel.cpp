@@ -100,13 +100,13 @@ void channel::splice_from_input()
     if (!input.is_open())
     {
         TRACE() << "socket closed";
-        return finish(error_code());
+        return finish(boost::system::errc::make_error_code(boost::system::errc::not_a_socket));
     }
 
     if (input.available() == 0)
     {
         TRACE() << "connection closed";
-        return finish(error_code());
+        return finish(boost::system::errc::make_error_code(boost::system::errc::not_connected));
     }
     current_state = splicing_input;
 

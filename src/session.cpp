@@ -69,7 +69,7 @@ void session::finish(const error_code& ec)
 void session::start_receive_header()
 {
     timer.restart();
-    requester.async_receive(asio::buffer(header), requester.message_peek, boost::bind(&session::finished_receive_header, this,
+    requester.async_receive(asio::buffer(header_data), boost::bind(&session::finished_receive_header, this,
             placeholders::error(), placeholders::bytes_transferred));
 }
 
@@ -112,6 +112,27 @@ void session::finished_connecting_to_peer(const error_code& ec)
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
+    prepare_header();
+    start_sending_header();
+}
+
+void session::start_sending_header()
+{
+    timer.restart();
+    responder.async_send(output_header, boost::bind(&session::finished_sending_header, this, placeholders::error()));
+}
+
+void session::finished_sending_header(const error_code& ec)
+{
+    statistics::push("sndhdrtm", timer.elapsed());
+    TRACE_ERROR(ec);
+    if (ec)
+        return finish(ec);
+    start_channels();
+}
+
+void session::start_channels()
+{
     timer.restart();
     request_channel.start();
     response_channel.start();
@@ -119,15 +140,41 @@ void session::finished_connecting_to_peer(const error_code& ec)
 
 const char* session::parse_header(std::size_t size)
 {
+    // it could be GET http://ya.ru HTTP/1.0
+    //          or GET http://ya.ru/index.html HTTP/1.0
     using boost::lambda::_1;
-    char* begin = std::find(header.begin(), header.begin() + size, ' ') + 8;
-    char* end = std::find_if(begin, header.begin() + size, _1 == ' ' || _1 == '/');
-    char* colon = std::find(begin, end, ':');
-    *end = 0;
+    char* end = header_data.begin() + size;
+    char* url = std::find(header_data.begin(), end, ' ') + 1;
+    output_header[0] = asio::const_buffer(header_data.begin(), url - header_data.begin());
+
+    char* dn_begin = url + sizeof("http://") - 1;
+    char* dn_end = std::find_if(dn_begin, end, _1 == ' ' || _1 == '/');
+    char* colon = std::find(dn_begin, dn_end, ':');
+    char* resource = *dn_end == '/' ? dn_end : dn_end - 1;
+    // it should be GET http://ya.ru\0HTTP/1.0
+    //                             ^-resource
+    //           or GET http://ya.ru\0index.html HTTP/1.0
+    //                              ^^-resource
+    output_header[1] = asio::const_buffer(resource, end - resource);
+
+    // temporary replace first resource byte with zero (replace with / in prepare_header)
+    *dn_end = 0;
     *colon = 0;
     // TODO: replace with c++-style conversion
-    port = (colon == end ? default_http_port : std::uint16_t(atoi(colon + 1)));
-    return begin;
+    port = (colon == dn_end ? default_http_port : std::uint16_t(atoi(colon + 1)));
+    return dn_begin;
+}
+
+void session::prepare_header()
+{
+    // it could be GET http://ya.ru\0HTTP/1.0
+    //                            ^-resource
+    //          or GET http://ya.ru\0index.html HTTP/1.0
+    //                             ^^-resource
+    char* resource = const_cast<char*>(asio::buffer_cast<const char*>(output_header[1]));
+    *resource = '/';
+    if (*(resource + 1) == 0)
+        *(resource + 1) = ' ';
 }
 
 const channel& session::get_request_channel() const

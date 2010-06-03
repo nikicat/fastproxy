@@ -20,7 +20,7 @@
 class statistics
 {
 public:
-    statistics(asio::io_service& io, const std::string& path, int seconds);
+    statistics(asio::io_service& io, int seconds);
 
     void start();
 
@@ -93,7 +93,6 @@ private:
     queues_t queues;
     asio::deadline_timer dump_timer;
     asio::deadline_timer::duration_type dump_interval;
-    std::ofstream output;
 
     static statistics* instance_;
     static logger log;

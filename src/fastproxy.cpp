@@ -108,7 +108,7 @@ void fastproxy::init_signals()
 
 void fastproxy::init_statistics()
 {
-    s.reset(new statistics(io, vm["stat-output"].as<std::string>(), vm["stat-interval"].as<int>()));
+    s.reset(new statistics(io, vm["stat-interval"].as<int>()));
 }
 
 void fastproxy::init_proxy()

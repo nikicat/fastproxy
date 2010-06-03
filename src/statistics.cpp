@@ -44,10 +44,9 @@ std::ostream& operator << (std::ostream& stream, const statistics::dumper& dumpe
     return stream;
 }
 
-statistics::statistics(asio::io_service& io, const std::string& path, int seconds)
+statistics::statistics(asio::io_service& io, int seconds)
     : dump_timer(io)
     , dump_interval(0, 0, seconds)
-    , output(path.c_str())
 {
     instance_ = this;
 }

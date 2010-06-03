@@ -46,23 +46,33 @@ protected:
     void start_connecting_to_peer(const ip::tcp::endpoint& peer);
     void finished_connecting_to_peer(const error_code& ec);
 
+    void start_sending_header();
+    void finished_sending_header(const error_code& ec);
+
+    void start_channels();
+
     void finish(const error_code& ec);
 
     const char* parse_header(std::size_t size);
+    void prepare_header();
 
 private:
+    const static std::size_t http_header_head_max_size = 1024;
+    const static std::uint16_t default_http_port = 80;
+
     proxy& parent_proxy;
     ip::tcp::socket requester;
     ip::tcp::socket responder;
     ip::tcp::resolver resolver;
     channel request_channel;
     channel response_channel;
-    const static std::size_t http_header_head_max_size = sizeof("GET http://") + 256;
-    boost::array<char, http_header_head_max_size> header;
-    const static std::uint16_t default_http_port = 80;
+    // header info
+    boost::array<char, http_header_head_max_size> header_data;
+    std::uint16_t port;
+    boost::array<asio::const_buffer, 2> output_header;
+
     int opened_channels;
     boost::function<void (const error_code&, resolver::const_iterator, resolver::const_iterator)> resolve_handler;
-    std::uint16_t port;
     boost::timer timer;
     error_code prev_ec;
     static logger log;
