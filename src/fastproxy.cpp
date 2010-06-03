@@ -48,7 +48,6 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("outbound-http", po::value<ip::tcp::endpoint>()->required(), "outgoing address for HTTP requests")
             ("outbound-ns", po::value<ip::udp::endpoint>()->required(), "outgoing address for NS lookup")
             ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
-            ("stat-output", po::value<std::string>()->required(), "output for statistics")
             ("stat-interval", po::value<int>()->required(), "interval of statistics dumping")
             ("log-level", po::value<int>()->required(), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel");
