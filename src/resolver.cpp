@@ -98,5 +98,7 @@ void resolver::finished_resolve_raw(dns_ctx* ctx, void* result, void* data)
 void resolver::finished_resolve(int status, const dns_rr_a4& response, const callback& completion)
 {
     TRACE() << status;
-    completion(boost::system::error_code(status, boost::system::get_generic_category()), reinterpret_cast<ip::address_v4*>(response.dnsa4_addr), reinterpret_cast<ip::address_v4*>(response.dnsa4_addr) + response.dnsa4_nrr);
+    completion(boost::system::error_code(status, boost::system::get_generic_category()),
+            status < 0 ? 0 : reinterpret_cast<ip::address_v4*>(response.dnsa4_addr),
+            status < 0 ? 0 : reinterpret_cast<ip::address_v4*>(response.dnsa4_addr) + response.dnsa4_nrr);
 }
