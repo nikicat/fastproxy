@@ -49,6 +49,9 @@ protected:
     void start_sending_header();
     void finished_sending_header(const error_code& ec);
 
+    void start_sending_connect_response();
+    void finished_sending_connect_response(const error_code& ec);
+
     void start_channels();
 
     void finish(const error_code& ec);
@@ -60,6 +63,13 @@ private:
     const static std::size_t http_header_head_max_size = 1024;
     const static std::uint16_t default_http_port = 80;
 
+    enum method_type
+    {
+        CONNECT,
+        GET,
+        POST,
+    };
+
     proxy& parent_proxy;
     ip::tcp::socket requester;
     ip::tcp::socket responder;
@@ -70,6 +80,7 @@ private:
     boost::array<char, http_header_head_max_size> header_data;
     std::uint16_t port;
     boost::array<asio::const_buffer, 2> output_header;
+    method_type method;
 
     int opened_channels;
     boost::function<void (const error_code&, resolver::const_iterator, resolver::const_iterator)> resolve_handler;
