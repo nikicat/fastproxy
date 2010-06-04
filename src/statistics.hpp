@@ -20,7 +20,7 @@
 class statistics
 {
 public:
-    statistics(asio::io_service& io, int seconds);
+    statistics(asio::io_service& io, std::int32_t seconds, std::size_t max_queue_size);
 
     void start();
 
@@ -52,6 +52,10 @@ private:
     class queue_t : public queue
     {
     public:
+        queue_t(std::size_t max_size)
+        : max_size(max_size)
+        {
+        }
         void push(value_type elem)
         {
             if (impl.size() == max_size)
@@ -87,12 +91,13 @@ private:
         }
     private:
         impl_t impl;
-        static const std::size_t max_size = 10000;
+        std::size_t max_size;
     };
     typedef boost::ptr_map<const char*, queue> queues_t;
     queues_t queues;
     asio::deadline_timer dump_timer;
     asio::deadline_timer::duration_type dump_interval;
+    std::size_t max_queue_size;
 
     static statistics* instance_;
     static logger log;
@@ -110,7 +115,7 @@ void statistics::push_(const char* name, value_type value)
     typedef queue_t<value_type> queue_type;
     queues_t::iterator it = queues.find(name);
     if (it == queues.end())
-        it = queues.insert(name, new queue_type).first;
+        it = queues.insert(name, new queue_type(max_queue_size)).first;
     dynamic_cast<queue_type*>(it->second)->push(value);
 }
 

@@ -44,9 +44,10 @@ std::ostream& operator << (std::ostream& stream, const statistics::dumper& dumpe
     return stream;
 }
 
-statistics::statistics(asio::io_service& io, int seconds)
+statistics::statistics(asio::io_service& io, std::int32_t dump_interval, std::size_t max_queue_size)
     : dump_timer(io)
-    , dump_interval(0, 0, seconds)
+    , dump_interval(0, 0, dump_interval)
+    , max_queue_size(max_queue_size)
 {
     instance_ = this;
 }

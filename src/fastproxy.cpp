@@ -50,7 +50,8 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
             ("stat-interval", po::value<int>()->required(), "interval of statistics dumping")
             ("log-level", po::value<int>()->required(), "logging level")
-            ("log-channel", po::value<string_vec>(), "logging channel");
+            ("log-channel", po::value<string_vec>(), "logging channel")
+            ("max-queue-size", po::value<std::size_t>(), "maximal size of statistics tail");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -108,7 +109,7 @@ void fastproxy::init_signals()
 
 void fastproxy::init_statistics()
 {
-    s.reset(new statistics(io, vm["stat-interval"].as<int>()));
+    s.reset(new statistics(io, vm["stat-interval"].as<std::int32_t>(), vm["max-queue-size"].as<std::size_t>()));
 }
 
 void fastproxy::init_proxy()
