@@ -51,7 +51,7 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("stat-interval", po::value<int>()->required(), "interval of statistics dumping")
             ("log-level", po::value<int>()->required(), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
-            ("max-queue-size", po::value<std::size_t>(), "maximal size of statistics tail");
+            ("max-queue-size", po::value<std::size_t>()->required(), "maximal size of statistics tail");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
