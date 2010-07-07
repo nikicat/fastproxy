@@ -29,6 +29,8 @@ public:
     // called by session (child)
     void finished_session(session* session, const boost::system::error_code& ec);
 
+    const ip::tcp::endpoint& get_outgoing_endpoint() const;
+
     void dump_channels_state() const;
 
 protected:

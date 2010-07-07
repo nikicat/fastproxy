@@ -103,6 +103,7 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 {
     TRACE() << peer;
     timer.restart();
+    responder.bind(parent_proxy.get_outgoing_endpoint());
     responder.async_connect(peer, boost::bind(&session::finished_connecting_to_peer, this, placeholders::error()));
 }
 

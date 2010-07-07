@@ -99,3 +99,8 @@ void proxy::dump_channels_state() const
                 << " opened: " << it->get_opened_channels();
     }
 }
+
+const ip::tcp::endpoint& proxy::get_outgoing_endpoint() const
+{
+    return outbound_http;
+}
