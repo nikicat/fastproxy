@@ -73,7 +73,6 @@ private:
     proxy& parent_proxy;
     ip::tcp::socket requester;
     ip::tcp::socket responder;
-    ip::tcp::resolver resolver;
     channel request_channel;
     channel response_channel;
     // header info

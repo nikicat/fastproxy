@@ -17,7 +17,7 @@
 logger session::log = logger(keywords::channel = "session");
 
 session::session(asio::io_service& io, proxy& parent_proxy)
-    : parent_proxy(parent_proxy), requester(io), responder(io), resolver(io)
+    : parent_proxy(parent_proxy), requester(io), responder(io, parent_proxy.get_outgoing_endpoint())
     , request_channel(requester, responder, this)
     , response_channel(responder, requester, this)
     , opened_channels(2)
@@ -103,7 +103,6 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 {
     TRACE() << peer;
     timer.restart();
-    responder.bind(parent_proxy.get_outgoing_endpoint());
     responder.async_connect(peer, boost::bind(&session::finished_connecting_to_peer, this, placeholders::error()));
 }
 
