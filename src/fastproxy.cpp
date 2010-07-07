@@ -27,6 +27,7 @@
 #include "chater.hpp"
 
 fastproxy* fastproxy::instance_;
+logger fastproxy::log = logger(keywords::channel = "fastproxy");
 
 fastproxy::fastproxy()
 {

@@ -50,6 +50,7 @@ private:
     std::unique_ptr<chater> c;
     std::set<std::string> channels;
     static fastproxy* instance_;
+    static logger log;
 };
 
 #endif /* FASTPROXY_HPP_ */
