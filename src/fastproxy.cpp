@@ -53,7 +53,8 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("stat-interval", po::value<int>()->required(), "interval of statistics dumping")
             ("log-level", po::value<int>()->required(), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
-            ("max-queue-size", po::value<std::size_t>()->required(), "maximal size of statistics tail");
+            ("max-queue-size", po::value<std::size_t>()->required(), "maximal size of statistics tail")
+            ("enable-chat", "enable chat on stdin/stdout");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -124,9 +125,8 @@ void fastproxy::init_proxy()
 
 void fastproxy::init_chater()
 {
-    TRACE() << "initiating chater";
-    c.reset(new chater(io, 1));
-    TRACE() << "initiated chater";
+    if (vm.count("enable-chater"))
+        c.reset(new chater(io, 1));
 }
 
 void fastproxy::init_resolver()
@@ -167,7 +167,8 @@ void fastproxy::run()
 {
     s->start();
     p->start();
-    c->start();
+    if (vm.count("enable-chater"))
+        c->start();
 
     io.run();
 }
