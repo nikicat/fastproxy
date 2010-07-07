@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/system/linux_error.hpp>
+#include <boost/exception/all.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/sources/channel_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
@@ -170,8 +171,15 @@ void fastproxy::run()
 
 int main(int argc, char* argv[])
 {
-    fastproxy f;
-    f.init(argc, argv);
-    f.run();
+    try
+    {
+        fastproxy f;
+        f.init(argc, argv);
+        f.run();
+    }
+    catch (const boost::exception& e)
+    {
+        std::cerr << boost::diagnostic_information(e);
+    }
     return 0;
 }
