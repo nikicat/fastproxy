@@ -25,6 +25,7 @@ public:
     void start()
     {
         start_waiting_input();
+        TRACE() << "started";
     }
 
 private:

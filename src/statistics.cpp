@@ -66,6 +66,7 @@ void statistics::dump(std::size_t count) const
 void statistics::start()
 {
     start_waiting_dump();
+    TRACE() << "started";
 }
 
 void statistics::start_waiting_dump()

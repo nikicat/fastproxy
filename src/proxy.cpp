@@ -35,6 +35,7 @@ void proxy::start()
 {
     start_accept();
     resolver_.start();
+    TRACE() << "started";
 }
 
 // called by session (child)
