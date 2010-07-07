@@ -22,6 +22,7 @@ public:
     , log(keywords::channel = "chater")
     {
     }
+
     void start()
     {
         start_waiting_input();

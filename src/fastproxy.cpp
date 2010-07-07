@@ -123,7 +123,9 @@ void fastproxy::init_proxy()
 
 void fastproxy::init_chater()
 {
+    TRACE() << "initiating chater";
     c.reset(new chater(io, 1));
+    TRACE() << "initiated chater";
 }
 
 void fastproxy::init_resolver()
