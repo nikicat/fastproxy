@@ -17,18 +17,12 @@ def set_options(opt):
 	opt.add_option('--build_kind', action='store', default='debug,release', help='build the selected variants')
 
 def configure(conf):
-
-	# conf.env.CXX = Options.options.meow
-	# to configure using another compiler, use a command-line like this
-	# CXX=g++-3.0 ./waf.py configure will use g++-3.0 instead of 'g++'
 	conf.check_tool('compiler_cxx')
+	conf.check_tool('boost')
+	conf.check_boost(min_version='1.43')
+	conf.check_cxx(fragment='#include <udns.h>\nint main(){return 0;}\n', lib='udns', mandatory=True)
 
 	conf.sub_config('src')
-
-	# here is how to override flags
-	#conf.env.CXXFLAGS_MYPROG  = ['-O3']
-	#if not Utils.is_win32: conf.env.LIB_MYPROG = ['m']
-	#conf.env.SOME_INSTALL_DIR = '/tmp/ahoy/lib/'
 
 	# create a debug and release builds (variants)
 	dbg = conf.env.copy()

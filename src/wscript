@@ -3,12 +3,9 @@
 # Thomas Nagy, 2006-2010 (ita)
 
 def configure(conf):
-	conf.env.LIB_BOOST      = ['boost_program_options', 'boost_system', 'boost_system', 'boost_log', 'boost_log_setup', 'pthread']
-#	conf.env.LIB_LOG4CPP    = ['log4cpp']
+	conf.env.LIB_BOOST      = ['boost_program_options', 'boost_system', 'boost_log', 'boost_log_setup', 'pthread']
 	conf.env.LIB_UDNS		= ['udns']
 	conf.env.LIBPATH_BOOST   = ['/usr/local/lib64']
-#	conf.env.LINKFLAGS_TEST = ['-g']
-#	conf.env.CPPPATH_TEST   = ['/opt/gnome/include']
 
 def build(bld):
 	# 1. A simple c++ program
