@@ -20,10 +20,12 @@ bool session_less(const session& lhs, const session& rhs)
     return lhs.get_id() < rhs.get_id();
 }
 
-proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http, const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server)
+proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http,
+             const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server, const time_duration& receive_timeout)
     : acceptor(io, inbound)
     , resolver_(io, outbound_ns, name_server)
     , outbound_http(outbound_http)
+    , receive_timeout(receive_timeout)
     , sessions(std::ptr_fun(session_less))
 {
     TRACE() << "start listening on " << inbound;
@@ -103,4 +105,9 @@ void proxy::dump_channels_state() const
 const ip::tcp::endpoint& proxy::get_outgoing_endpoint() const
 {
     return outbound_http;
+}
+
+const time_duration& proxy::get_receive_timeout() const
+{
+    return receive_timeout;
 }

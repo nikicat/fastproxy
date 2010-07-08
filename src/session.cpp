@@ -18,8 +18,8 @@ logger session::log = logger(keywords::channel = "session");
 
 session::session(asio::io_service& io, proxy& parent_proxy)
     : parent_proxy(parent_proxy), requester(io), responder(io, parent_proxy.get_outgoing_endpoint())
-    , request_channel(requester, responder, this)
-    , response_channel(responder, requester, this)
+    , request_channel(requester, responder, this, parent_proxy.get_receive_timeout())
+    , response_channel(responder, requester, this, parent_proxy.get_receive_timeout())
     , opened_channels(2)
     , resolve_handler(boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3))
 {

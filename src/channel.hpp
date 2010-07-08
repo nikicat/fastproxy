@@ -28,7 +28,7 @@ class session;
 class channel : public boost::noncopyable
 {
 public:
-    channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session);
+    channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session, const time_duration& input_timeout);
     ~channel();
 
     void start();
@@ -52,6 +52,8 @@ protected:
     void finished_waiting_input(const error_code& ec, std::size_t);
     void finished_waiting_output(const error_code& ec, std::size_t);
 
+    void input_timeouted(const error_code& ec);
+
     void splice_from_input();
     void splice_to_output();
 
@@ -63,6 +65,8 @@ protected:
 private:
     ip::tcp::socket& input;
     ip::tcp::socket& output;
+    asio::deadline_timer input_timer;
+    time_duration input_timeout;
     int pipe[2];
     long pipe_size;
     session* parent_session;
@@ -71,8 +75,11 @@ private:
     char space_for_input_op[size_of_operation];
     handler_t output_handler;
     char space_for_output_op[size_of_operation];
+
+    // statistics data
     std::size_t splices_count;
     state current_state;
+
     static logger log;
 };
 

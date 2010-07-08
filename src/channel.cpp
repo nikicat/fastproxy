@@ -35,9 +35,11 @@ void asio_handler_invoke(Function function, handler_t** h)
 
 logger channel::log = logger(keywords::channel = "channel");
 
-channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session)
+channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session, const time_duration& input_timeout)
     : input(input)
     , output(output)
+    , input_timer(input.io_service())
+    , input_timeout(input_timeout)
     , pipe_size(0)
     , parent_session(parent_session)
     , input_handler(boost::bind(&channel::finished_waiting_input, this, placeholders::error(), placeholders::bytes_transferred()))
@@ -67,6 +69,8 @@ void channel::start_waiting_input()
 {
     TRACE();
     current_state = waiting_input;
+    input_timer.expires_from_now(input_timeout);
+    input_timer.async_wait(boost::bind(&channel::input_timeouted, this, placeholders::error()));
     input.async_read_some(asio::null_buffers(), &input_handler);
 }
 
@@ -80,6 +84,8 @@ void channel::start_waiting_output()
 void channel::finished_waiting_input(const error_code& ec, std::size_t)
 {
     TRACE_ERROR(ec);
+    input_timer.cancel();
+
     if (ec)
         return finish(ec);
 
@@ -93,6 +99,13 @@ void channel::finished_waiting_output(const error_code& ec, std::size_t)
         return finish(ec);
 
     splice_to_output();
+}
+
+void channel::input_timeouted(const error_code& ec)
+{
+    TRACE_ERROR(ec);
+    if (ec != asio::error::operation_aborted)
+        input.cancel();
 }
 
 void channel::splice_from_input()

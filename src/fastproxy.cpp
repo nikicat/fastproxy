@@ -47,14 +47,15 @@ void fastproxy::parse_config(int argc, char* argv[])
     desc.add_options()
             ("help", "produce help message")
             ("inbound", po::value<ip::tcp::endpoint>()->required(), "listening address")
-            ("outbound-http", po::value<ip::tcp::endpoint>()->required(), "outgoing address for HTTP requests")
-            ("outbound-ns", po::value<ip::udp::endpoint>()->required(), "outgoing address for NS lookup")
+            ("outgoing-http", po::value<ip::tcp::endpoint>()->default_value(ip::tcp::endpoint()), "outgoing address for HTTP requests")
+            ("outgoing-ns", po::value<ip::udp::endpoint>()->default_value(ip::udp::endpoint()), "outgoing address for NS lookup")
             ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
-            ("stat-interval", po::value<int>()->required(), "interval of statistics dumping")
-            ("log-level", po::value<int>()->required(), "logging level")
+            ("stat-interval", po::value<time_duration::sec_type>()->default_value(10), "interval of statistics dumping (in seconds)")
+            ("log-level", po::value<int>()->default_value(2), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
-            ("max-queue-size", po::value<std::size_t>()->required(), "maximal size of statistics tail")
-            ("enable-chat", "enable chat on stdin/stdout");
+            ("max-queue-size", po::value<std::size_t>()->default_value(1000), "maximal size of statistics tail")
+            ("enable-chat", "enable chat on stdin/stdout")
+            ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -112,15 +113,16 @@ void fastproxy::init_signals()
 
 void fastproxy::init_statistics()
 {
-    s.reset(new statistics(io, vm["stat-interval"].as<std::int32_t>(), vm["max-queue-size"].as<std::size_t>()));
+    s.reset(new statistics(io, boost::posix_time::seconds(vm["stat-interval"].as<time_duration::sec_type>()), vm["max-queue-size"].as<std::size_t>()));
 }
 
 void fastproxy::init_proxy()
 {
     p.reset(new proxy(io, vm["inbound"].as<ip::tcp::endpoint>(),
-            vm["outbound-http"].as<ip::tcp::endpoint>(),
-            vm["outbound-ns"].as<ip::udp::endpoint>(),
-            vm["name-server"].as<ip::udp::endpoint>()));
+            vm["outgoing-http"].as<ip::tcp::endpoint>(),
+            vm["outgoing-ns"].as<ip::udp::endpoint>(),
+            vm["name-server"].as<ip::udp::endpoint>(),
+            boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>())));
 }
 
 void fastproxy::init_chater()

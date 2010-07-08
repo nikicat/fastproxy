@@ -14,6 +14,7 @@
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/timer.hpp>
+#include <boost/date_time.hpp>
 #include <string>
 
 #ifdef NOTRACE
@@ -31,6 +32,7 @@ namespace boost { namespace asio { namespace ip {} namespace placeholders {} } }
 
 using boost::system::system_error;
 using boost::system::error_code;
+using boost::posix_time::time_duration;
 namespace keywords = boost::log::keywords;
 namespace asio = boost::asio;
 namespace ip = asio::ip;

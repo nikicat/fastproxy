@@ -18,7 +18,8 @@
 class proxy : public boost::noncopyable
 {
 public:
-    proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http, const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server);
+    proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http,
+          const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server, const time_duration& receive_timeout);
 
     // called by main (parent)
     void start();
@@ -30,6 +31,7 @@ public:
     void finished_session(session* session, const boost::system::error_code& ec);
 
     const ip::tcp::endpoint& get_outgoing_endpoint() const;
+    const time_duration& get_receive_timeout() const;
 
     void dump_channels_state() const;
 
@@ -46,6 +48,7 @@ private:
     ip::tcp::acceptor acceptor;
     resolver resolver_;
     ip::tcp::endpoint outbound_http;
+    time_duration receive_timeout;
     session_cont sessions;
     static logger log;
 };

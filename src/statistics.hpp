@@ -20,7 +20,7 @@
 class statistics
 {
 public:
-    statistics(asio::io_service& io, std::int32_t seconds, std::size_t max_queue_size);
+    statistics(asio::io_service& io, time_duration seconds, std::size_t max_queue_size);
 
     void start();
 
@@ -96,7 +96,7 @@ private:
     typedef boost::ptr_map<const char*, queue> queues_t;
     queues_t queues;
     asio::deadline_timer dump_timer;
-    asio::deadline_timer::duration_type dump_interval;
+    time_duration dump_interval;
     std::size_t max_queue_size;
 
     static statistics* instance_;
