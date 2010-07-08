@@ -14,12 +14,14 @@
 #include "common.hpp"
 #include "resolver.hpp"
 #include "session.hpp"
+#include "headers.hpp"
 
 class proxy : public boost::noncopyable
 {
 public:
     proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http,
-          const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server, const time_duration& receive_timeout);
+          const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server,
+          const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers);
 
     // called by main (parent)
     void start();
@@ -34,6 +36,8 @@ public:
     const time_duration& get_receive_timeout() const;
 
     void dump_channels_state() const;
+
+    const headers_type& get_allowed_headers() const;
 
 protected:
     void start_accept();
@@ -50,6 +54,8 @@ private:
     ip::tcp::endpoint outbound_http;
     time_duration receive_timeout;
     session_cont sessions;
+    headers_type allowed_headers;
+    std::vector<std::string> headers_cont;
     static logger log;
 };
 

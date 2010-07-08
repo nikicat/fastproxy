@@ -13,6 +13,7 @@
 #include "session.hpp"
 #include "proxy.hpp"
 #include "statistics.hpp"
+#include "headers.hpp"
 
 logger session::log = logger(keywords::channel = "session");
 
@@ -126,8 +127,9 @@ void session::finished_connecting_to_peer(const error_code& ec)
 void session::start_sending_header()
 {
     prepare_header();
+    filter_headers();
     timer.restart();
-    responder.async_send(output_header, boost::bind(&session::finished_sending_header, this, placeholders::error()));
+    responder.async_send(output_headers, boost::bind(&session::finished_sending_header, this, placeholders::error()));
 }
 
 void session::finished_sending_header(const error_code& ec)
@@ -178,7 +180,7 @@ const char* session::parse_header(std::size_t size)
     else if (std::mismatch(begin, method_end, "POST").first == method_end)
         method = POST;
     char* url = method_end + 1;
-    output_header[0] = asio::const_buffer(header_data.begin(), url - header_data.begin());
+    output_headers.push_back(asio::const_buffer(header_data.begin(), url - header_data.begin()));
 
     char* dn_begin = url + (method == CONNECT ? 0 : sizeof("http://") - 1);
     char* dn_end = std::find_if(dn_begin, end, _1 == ' ' || _1 == '/');
@@ -188,7 +190,7 @@ const char* session::parse_header(std::size_t size)
     //                             ^-resource
     //           or GET http://ya.ru\0index.html HTTP/1.0
     //                              ^^-resource
-    output_header[1] = asio::const_buffer(resource, end - resource);
+    headers_tail = asio::const_buffer(resource, end - resource);
 
     // temporary replace first resource byte with zero (replace with / in prepare_header)
     *dn_end = 0;
@@ -204,10 +206,51 @@ void session::prepare_header()
     //                            ^-resource
     //          or GET http://ya.ru\0index.html HTTP/1.0
     //                             ^^-resource
-    char* resource = const_cast<char*>(asio::buffer_cast<const char*>(output_header[1]));
+    char* resource = const_cast<char*>(asio::buffer_cast<const char*>(headers_tail));
     *resource = '/';
     if (*(resource + 1) == 0)
         *(resource + 1) = ' ';
+}
+
+lstring get_next_header(const lstring& headers, const lstring& current)
+{
+    if (*current.end == '\r' || *current.end == '\n')
+        return lstring();
+    const char* header = std::find(current.end, headers.end, '\n');
+    if (header == headers.end)
+        return lstring();
+    else
+        return lstring(current.end, header + 1);
+}
+
+void session::filter_headers()
+{
+    const headers_type& allowed_headers = parent_proxy.get_allowed_headers();
+    if (allowed_headers.empty())
+    {
+        output_headers.push_back(headers_tail);
+        return;
+    }
+
+    const lstring headers(asio::buffer_cast<const char*>(headers_tail), asio::buffer_cast<const char*>(headers_tail) + asio::buffer_size(headers_tail));
+    lstring allowed = get_next_header(headers, lstring(headers.begin, headers.begin));
+    for (;;)
+    {
+        const lstring& header = get_next_header(headers, allowed);
+        if (!header)
+            break;
+        if (allowed_headers.find(header) == allowed_headers.end())
+        {
+            if (allowed)
+                output_headers.push_back(asio::const_buffer(allowed.begin, allowed.size()));
+            allowed.begin = header.end;
+        }
+        allowed.end = header.end;
+    }
+    allowed.end = headers.end;
+
+    if (allowed)
+        output_headers.push_back(asio::const_buffer(allowed.begin, allowed.size()));
 }
 
 const channel& session::get_request_channel() const

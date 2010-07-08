@@ -9,6 +9,7 @@
 #define SESSION_HPP_
 
 #include <cstdint>
+#include <vector>
 #include <boost/smart_ptr.hpp>
 #include <boost/function.hpp>
 
@@ -58,6 +59,7 @@ protected:
 
     const char* parse_header(std::size_t size);
     void prepare_header();
+    void filter_headers();
 
 private:
     const static std::size_t http_header_head_max_size = 1024;
@@ -78,7 +80,8 @@ private:
     // header info
     boost::array<char, http_header_head_max_size> header_data;
     std::uint16_t port;
-    boost::array<asio::const_buffer, 2> output_header;
+    std::vector<asio::const_buffer> output_headers;
+    asio::const_buffer headers_tail;
     method_type method;
 
     int opened_channels;

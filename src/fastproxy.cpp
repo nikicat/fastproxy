@@ -55,7 +55,8 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("log-channel", po::value<string_vec>(), "logging channel")
             ("max-queue-size", po::value<std::size_t>()->default_value(1000), "maximal size of statistics tail")
             ("enable-chat", "enable chat on stdin/stdout")
-            ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)");
+            ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
+            ("allowed-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -122,7 +123,8 @@ void fastproxy::init_proxy()
             vm["outgoing-http"].as<ip::tcp::endpoint>(),
             vm["outgoing-ns"].as<ip::udp::endpoint>(),
             vm["name-server"].as<ip::udp::endpoint>(),
-            boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>())));
+            boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>()),
+            vm["allowed-header"].as<string_vec>()));
 }
 
 void fastproxy::init_chater()
@@ -177,15 +179,15 @@ void fastproxy::run()
 
 int main(int argc, char* argv[])
 {
-    try
-    {
+//    try
+//    {
         fastproxy f;
         f.init(argc, argv);
         f.run();
-    }
-    catch (const boost::exception& e)
-    {
-        std::cerr << boost::diagnostic_information(e);
-    }
+//    }
+//    catch (const boost::exception& e)
+//    {
+//        std::cerr << boost::diagnostic_information(e);
+//    }
     return 0;
 }

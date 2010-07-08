@@ -21,13 +21,17 @@ bool session_less(const session& lhs, const session& rhs)
 }
 
 proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http,
-             const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server, const time_duration& receive_timeout)
+             const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server,
+             const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers)
     : acceptor(io, inbound)
     , resolver_(io, outbound_ns, name_server)
     , outbound_http(outbound_http)
     , receive_timeout(receive_timeout)
     , sessions(std::ptr_fun(session_less))
+    , headers_cont(allowed_headers)
 {
+    for (auto it = headers_cont.begin(); it != headers_cont.end(); ++it)
+        this->allowed_headers.insert(it->c_str());
     TRACE() << "start listening on " << inbound;
     acceptor.listen();
 }
@@ -110,4 +114,9 @@ const ip::tcp::endpoint& proxy::get_outgoing_endpoint() const
 const time_duration& proxy::get_receive_timeout() const
 {
     return receive_timeout;
+}
+
+const headers_type& proxy::get_allowed_headers() const
+{
+    return allowed_headers;
 }
