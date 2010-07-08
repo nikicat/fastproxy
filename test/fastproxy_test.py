@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
     def setUp(self):
         self.fastproxy = Popen('../build/debug/src/fastproxy \
             --inbound=127.0.0.1:{0} --receive-timeout={1} \
-            --name-server=8.8.8.8 --log-level=0 --log-channel=session \
+            --name-server=8.8.8.8 --log-channel=session \
             --allowed-header={2}'.format(self.port, self.timeout, self.allowed_header),
             shell=True, env={'LD_LIBRARY_PATH': '/usr/local/lib64'})
         time.sleep(1)
