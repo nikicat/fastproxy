@@ -56,7 +56,7 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("max-queue-size", po::value<std::size_t>()->default_value(1000), "maximal size of statistics tail")
             ("enable-chat", "enable chat on stdin/stdout")
             ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
-            ("allowed-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests");
+            ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -124,7 +124,7 @@ void fastproxy::init_proxy()
             vm["outgoing-ns"].as<ip::udp::endpoint>(),
             vm["name-server"].as<ip::udp::endpoint>(),
             boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>()),
-            vm["allowed-header"].as<string_vec>()));
+            vm["allow-header"].as<string_vec>()));
 }
 
 void fastproxy::init_chater()
