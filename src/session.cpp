@@ -234,6 +234,12 @@ void session::filter_headers()
 
     const lstring headers(asio::buffer_cast<const char*>(headers_tail), asio::buffer_cast<const char*>(headers_tail) + asio::buffer_size(headers_tail));
     lstring allowed = get_next_header(headers, lstring(headers.begin, headers.begin));
+    if (!allowed)
+    {
+        output_headers.push_back(headers_tail);
+        return;
+    }
+
     for (;;)
     {
         const lstring& header = get_next_header(headers, allowed);
