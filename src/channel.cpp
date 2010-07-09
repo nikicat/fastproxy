@@ -105,7 +105,10 @@ void channel::input_timeouted(const error_code& ec)
 {
     TRACE_ERROR(ec);
     if (ec != asio::error::operation_aborted)
-        input.cancel();
+    {
+        error_code tmp_ec;
+        input.cancel(tmp_ec);
+    }
 }
 
 void channel::splice_from_input()
