@@ -173,12 +173,10 @@ const char* session::parse_header(std::size_t size)
     char* begin = header_data.begin();
     char* end = begin + size;
     char* method_end = std::find(begin, end, ' ');
-    if (std::mismatch(begin, method_end, "GET").first == method_end)
-        method = GET;
-    else if (std::mismatch(begin, method_end, "CONNECT").first == method_end)
+    if (std::mismatch(begin, method_end, "CONNECT").first == method_end)
         method = CONNECT;
-    else if (std::mismatch(begin, method_end, "POST").first == method_end)
-        method = POST;
+    else
+        method = OTHER;
     char* url = method_end + 1;
     output_headers.push_back(asio::const_buffer(header_data.begin(), url - header_data.begin()));
 

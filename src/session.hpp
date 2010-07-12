@@ -68,8 +68,7 @@ private:
     enum method_type
     {
         CONNECT,
-        GET,
-        POST,
+        OTHER,
     };
 
     proxy& parent_proxy;

@@ -6,9 +6,7 @@ Created on Jul 8, 2010
 import unittest
 from subprocess import Popen
 import urllib
-import os
 import time
-import sys
 import socket
 
 class Test(unittest.TestCase):
@@ -34,13 +32,13 @@ class Test(unittest.TestCase):
     def test_simple(self):
         urllib.urlopen('http://ya.ru', proxies={'http': 'http://localhost:{0}'.format(self.port)})
         
-    def _send_request(self, headers=None):
+    def _send_request(self, headers=None, method='GET'):
         l = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         l.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         l.bind(('localhost', self.port + 1))
         l.listen(5)
         self.c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        request = 'GET http://localhost:{0} HTTP/1.0\r\n{1}\r\n'.format(self.port + 1, headers or '')
+        request = '{2} http://localhost:{0} HTTP/1.0\r\n{1}\r\n'.format(self.port + 1, headers or '', method)
         self.c.connect(('localhost', self.port))
         self.c.send(request)
         s, addr = l.accept()
@@ -78,6 +76,11 @@ class Test(unittest.TestCase):
         header = '{0}{1}{0}{1}{0}'.format(allowed_header, disallowed_header)
         request = self._send_request(header)
         self.assertEqual(request, 'GET / HTTP/1.0\r\n{0}{0}{0}\r\n'.format(allowed_header))
+
+    def test_http_methods(self):
+        method='DELETE'
+        request = self._send_request(method=method)
+        self.assertEqual(request, '{0} / HTTP/1.0\r\n\r\n'.format(method))
 
 if __name__ == "__main__":
     #sys.argv = ['', 'Test.test_header_filter']
