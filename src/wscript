@@ -10,8 +10,9 @@ def build(bld):
 	# 1. A simple c++ program
 	bld(
 		features = 'cxx cprogram',
-		source = 'fastproxy.cpp channel.cpp session.cpp resolver.cpp proxy.cpp statistics.cpp',
+		source = 'fastproxy.cpp channel.cpp session.cpp resolver.cpp proxy.cpp statistics.cpp signal.cpp',
 		target = 'fastproxy',
+		includes = ['../contrib'],
 		defines = ['BOOST_ASIO_DISABLE_THREADS', 'BOOST_LOG_NO_THREADS'],
 		uselib = 'BOOST UDNS',
 		cxxflags = '-std=c++0x')

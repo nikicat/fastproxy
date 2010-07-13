@@ -64,7 +64,7 @@ void proxy::finished_session(session* session, const boost::system::error_code& 
 void proxy::start_accept()
 {
     std::unique_ptr<session> new_sess(new session(acceptor.io_service(), *this));
-    acceptor.async_accept(new_sess->socket(), boost::bind(&proxy::handle_accept, this, placeholders::error, new_sess.get()));
+    acceptor.async_accept(new_sess->socket(), boost::bind(&proxy::handle_accept, this, placeholders::error(), new_sess.get()));
     new_sess.release();
 }
 

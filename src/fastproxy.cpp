@@ -110,6 +110,30 @@ void fastproxy::init_signals()
         perror("pthread_sigmask");
         exit(EXIT_FAILURE);
     }
+
+    sw.reset(new signal_waiter(io));
+    sw->add_signal(SIGTERM);
+    sw->add_signal(SIGQUIT);
+    sw->add_signal(SIGINT);
+    start_waiting_for_quit();
+}
+
+void fastproxy::start_waiting_for_quit()
+{
+    sw->async_wait(boost::bind(&fastproxy::quit, this, placeholders::error()));
+}
+
+void fastproxy::quit(const error_code& ec)
+{
+    if (ec)
+    {
+        TRACE_ERROR(ec);
+        start_waiting_for_quit();
+    }
+    else
+    {
+        io.stop();
+    }
 }
 
 void fastproxy::init_statistics()

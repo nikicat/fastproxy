@@ -11,6 +11,7 @@
 #include <set>
 #include <boost/program_options.hpp>
 
+#include "signal.hpp"
 #include "common.hpp"
 
 class proxy;
@@ -40,6 +41,9 @@ private:
     void init_proxy();
     void init_chater();
 
+    void start_waiting_for_quit();
+    void quit(const error_code& ec);
+
     bool check_channel_impl(const std::string& channel) const;
     friend bool check_channel(const std::string& channel);
 
@@ -48,6 +52,7 @@ private:
     std::unique_ptr<statistics> s;
     std::unique_ptr<proxy> p;
     std::unique_ptr<chater> c;
+    std::unique_ptr<signal_waiter> sw;
     std::set<std::string> channels;
     static fastproxy* instance_;
     static logger log;
