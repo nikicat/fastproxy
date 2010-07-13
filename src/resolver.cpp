@@ -93,6 +93,8 @@ void resolver::finished_resolve_raw(dns_ctx* ctx, void* result, void* data)
 
     int status = dns_status(ctx);
     finished_resolve(status, response, completion);
+
+    free(result);
 }
 
 void resolver::finished_resolve(int status, const dns_rr_a4& response, const callback& completion)
