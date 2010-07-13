@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2010 (ita)
 
 def configure(conf):
 	conf.env.LIB_BOOST      = ['boost_program_options', 'boost_system', 'boost_log', 'boost_log_setup', 'pthread']
