@@ -1,0 +1,9 @@
+# site-config.jam or user-config.jam must contain a line like this one: 
+# using boost : 1.42 : <include>C:/include/boost-1_42 <library>C:/lib ; 
+
+import testing ; 
+import boost ; 
+boost.use-project ; 
+project : requirements <include>../src <library>/boost//system <library>/boost//thread <library>/boost//unit_test_framework <host-os>windows:<define>_WIN32_WINNT=0x0501 ; 
+run sync.cpp ; 
+run async.cpp ; 
