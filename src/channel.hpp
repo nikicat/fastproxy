@@ -78,6 +78,7 @@ private:
 
     // statistics data
     std::size_t splices_count;
+    std::size_t bytes_count;
     state current_state;
 
     static logger log;

@@ -18,6 +18,7 @@
 #include <boost/log/utility/init/to_console.hpp>
 #include <boost/log/utility/init/common_attributes.hpp>
 #include <boost/log/filters.hpp>
+#include <boost/filesystem.hpp>
 
 #include <pthread.h>
 
@@ -46,11 +47,11 @@ void fastproxy::parse_config(int argc, char* argv[])
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "produce help message")
-            ("inbound", po::value<ip::tcp::endpoint>()->required(), "listening address")
+            ("ingoing-http", po::value<ip::tcp::endpoint>()->required(), "http listening address")
+            ("ingoing-stat", po::value<std::string>()->required(), "statistics listening socket")
             ("outgoing-http", po::value<ip::tcp::endpoint>()->default_value(ip::tcp::endpoint()), "outgoing address for HTTP requests")
             ("outgoing-ns", po::value<ip::udp::endpoint>()->default_value(ip::udp::endpoint()), "outgoing address for NS lookup")
             ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
-            ("stat-interval", po::value<time_duration::sec_type>()->default_value(10), "interval of statistics dumping (in seconds)")
             ("log-level", po::value<int>()->default_value(2), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
             ("max-queue-size", po::value<std::size_t>()->default_value(1000), "maximal size of statistics tail")
@@ -138,12 +139,14 @@ void fastproxy::quit(const error_code& ec)
 
 void fastproxy::init_statistics()
 {
-    s.reset(new statistics(io, boost::posix_time::seconds(vm["stat-interval"].as<time_duration::sec_type>()), vm["max-queue-size"].as<std::size_t>()));
+    const std::string& stat_sock = vm["ingoing-stat"].as<std::string>();
+    boost::filesystem::remove(stat_sock);
+    s.reset(new statistics(io, stat_sock, vm["max-queue-size"].as<std::size_t>()));
 }
 
 void fastproxy::init_proxy()
 {
-    p.reset(new proxy(io, vm["inbound"].as<ip::tcp::endpoint>(),
+    p.reset(new proxy(io, vm["ingoing-http"].as<ip::tcp::endpoint>(),
             vm["outgoing-http"].as<ip::tcp::endpoint>(),
             vm["outgoing-ns"].as<ip::udp::endpoint>(),
             vm["name-server"].as<ip::udp::endpoint>(),

@@ -32,8 +32,6 @@ proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::t
 {
     for (auto it = headers_cont.begin(); it != headers_cont.end(); ++it)
         this->allowed_headers.insert(it->c_str());
-    TRACE() << "start listening on " << inbound;
-    acceptor.listen();
 }
 
 // called by main (parent)
@@ -58,7 +56,7 @@ void proxy::finished_session(session* session, const boost::system::error_code& 
     if (c != 1)
         TRACE() << "erased " << c << " items. total " << sessions.size() << " items";
     assert(c == 1);
-    update_statistics();
+    statistics::decrement("current_sessions");
 }
 
 void proxy::start_accept()
@@ -86,12 +84,8 @@ void proxy::start_session(session* new_session)
     assert(inserted);
     new_session->start();
     start_accept();
-    update_statistics();
-}
-
-void proxy::update_statistics()
-{
-    statistics::push("sesscnt", sessions.size());
+    statistics::increment("total_sessions");
+    statistics::increment("current_sessions");
 }
 
 void proxy::dump_channels_state() const

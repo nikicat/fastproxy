@@ -44,7 +44,7 @@ void session::finished_channel(const error_code& ec)
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
     if (opened_channels == 0)
     {
-        statistics::push("sesstm", timer.elapsed());
+        statistics::push("session_time", timer.elapsed());
         finish(ec ? ec : prev_ec);
     }
     else
@@ -58,7 +58,7 @@ void session::finished_channel(const error_code& ec)
             requester.cancel(tmp_ec);
             responder.cancel(tmp_ec);
         }
-        statistics::push("chantm", timer.elapsed());
+        statistics::push("channel_time", timer.elapsed());
     }
 }
 
@@ -76,7 +76,7 @@ void session::start_receive_header()
 
 void session::finished_receive_header(const error_code& ec, std::size_t bytes_transferred)
 {
-    statistics::push("headtm", timer.elapsed());
+    statistics::push("request_header_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -92,7 +92,7 @@ void session::start_resolving(const char* peer)
 
 void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
 {
-    statistics::push("restm", timer.elapsed());
+    statistics::push("resolve_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -109,7 +109,7 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 
 void session::finished_connecting_to_peer(const error_code& ec)
 {
-    statistics::push("contm", timer.elapsed());
+    statistics::push("connected_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -134,7 +134,7 @@ void session::start_sending_header()
 
 void session::finished_sending_header(const error_code& ec)
 {
-    statistics::push("sndhdrtm", timer.elapsed());
+    statistics::push("send_request_header_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -150,7 +150,7 @@ void session::start_sending_connect_response()
 
 void session::finished_sending_connect_response(const error_code& ec)
 {
-    statistics::push("sndcrtm", timer.elapsed());
+    statistics::push("send_connect_response_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);

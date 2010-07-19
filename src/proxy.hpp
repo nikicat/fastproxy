@@ -45,8 +45,6 @@ protected:
     void handle_accept(const boost::system::error_code& ec, session* new_session);
     void start_session(session* new_session);
 
-    void update_statistics();
-
 private:
     typedef boost::ptr_set<session, std::pointer_to_binary_function<const session&, const session&, bool> > session_cont;
     ip::tcp::acceptor acceptor;

@@ -45,6 +45,7 @@ channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* paren
     , input_handler(boost::bind(&channel::finished_waiting_input, this, placeholders::error(), placeholders::bytes_transferred()))
     , output_handler(boost::bind(&channel::finished_waiting_output,this, placeholders::error(), placeholders::bytes_transferred()))
     , splices_count(0)
+    , bytes_count(0)
     , current_state(created)
 {
     if (pipe2(pipe, O_NONBLOCK) == -1)
@@ -176,7 +177,10 @@ void channel::finish(const error_code& ec)
 {
     TRACE_ERROR(ec) << parent_session->get_id();
     current_state = finished;
-    statistics::push("splcnt", splices_count);
+    statistics::push("splices", splices_count);
+    statistics::push("bytes", bytes_count);
+    statistics::increment("total_splices", splices_count);
+    statistics::increment("total_bytes", bytes_count);
     parent_session->finished_channel(ec);
 }
 
@@ -193,6 +197,7 @@ void channel::splice(int from, int to, long& spliced, error_code& ec)
         if (ec == boost::system::errc::resource_unavailable_try_again)
             ec.clear();
     }
+    bytes_count += spliced;
     TRACE() << spliced << " bytes";
 }
 

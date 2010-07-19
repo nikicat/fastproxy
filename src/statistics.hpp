@@ -13,14 +13,16 @@
 #include <fstream>
 #include <numeric>
 #include <boost/ptr_container/ptr_map.hpp>
+#include <boost/ptr_container/ptr_set.hpp>
 #include <boost/asio.hpp>
 
+#include "stat_sess.hpp"
 #include "common.hpp"
 
 class statistics
 {
 public:
-    statistics(asio::io_service& io, time_duration seconds, std::size_t max_queue_size);
+    statistics(asio::io_service& io, const local::stream_protocol::endpoint& stat_ep, std::size_t max_queue_size);
 
     void start();
 
@@ -29,14 +31,27 @@ public:
     template<typename value_t>
     static void push(const char* name, value_t value);
 
+    static void increment(const char* name, std::size_t value = 1);
+    static void decrement(const char* name, std::size_t value = 1);
+
+    std::string process_request(const std::string& request) const;
+
+    // called by statistics_session (child)
+    void finished_session(statistics_session* session, const boost::system::error_code& ec);
+
+protected:
+    void start_accept();
+    void finished_accept(const error_code& ec, statistics_session* new_session);
+    void start_session(statistics_session* new_session);
+
+private:
+    std::size_t get_statistic(const std::string& name) const;
+
     template<typename value_t>
     void push_(const char* name, value_t value);
 
-    void dump(std::size_t count = 0) const;
-
-private:
-    void start_waiting_dump();
-    void finished_waiting_dump(const error_code& ec);
+    void increment_(const char* name, std::size_t value);
+    void decrement_(const char* name, std::size_t value);
 
     class dumper;
     friend std::ostream& operator << (std::ostream& stream, const dumper& dumper);
@@ -93,11 +108,17 @@ private:
         impl_t impl;
         std::size_t max_size;
     };
+
     typedef boost::ptr_map<const char*, queue> queues_t;
     queues_t queues;
-    asio::deadline_timer dump_timer;
-    time_duration dump_interval;
     std::size_t max_queue_size;
+
+    typedef std::map<const char*, std::size_t> counters_t;
+    counters_t counters;
+    local::stream_protocol::acceptor acceptor;
+
+    typedef boost::ptr_set<statistics_session> sessions_t;
+    sessions_t sessions;
 
     static statistics* instance_;
     static logger log;

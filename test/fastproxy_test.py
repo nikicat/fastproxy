@@ -13,11 +13,12 @@ class Test(unittest.TestCase):
     port = 32567
     timeout = 5
     allowed_header = 'AllowedHeader'
+    stat_sock = '/tmp/stat.sock'
 
     def setUp(self):
         self.fastproxy = Popen('../build/debug/src/fastproxy \
-            --inbound=127.0.0.1:{0} --receive-timeout={1} \
-            --name-server=8.8.8.8 --allow-header={2}'.format(self.port, self.timeout, self.allowed_header),
+            --ingoing-http=127.0.0.1:{0} --receive-timeout={1} \
+            --name-server=8.8.8.8 --allow-header={2} --ingoing-stat={3}'.format(self.port, self.timeout, self.allowed_header, self.stat_sock),
             shell=True, env={'LD_LIBRARY_PATH': '/usr/local/lib64'})
         time.sleep(1)
 
@@ -81,7 +82,15 @@ class Test(unittest.TestCase):
         method='DELETE'
         request = self._send_request(method=method)
         self.assertEqual(request, '{0} / HTTP/1.0\r\n\r\n'.format(method))
+        
+    def test_statistics(self):
+        self.test_http()
+        self.stat = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.stat.connect(self.stat_sock)
+        self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions\n')
+        self.assertEqual(self.stat.recv(64), '1\t0\t1\t1\n')
 
 if __name__ == "__main__":
-    #sys.argv = ['', 'Test.test_header_filter']
+    #import sys
+    #sys.argv = ['', 'Test.test_statistics']
     unittest.main()

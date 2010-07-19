@@ -8,6 +8,9 @@
 #ifndef COMMON_HPP_
 #define COMMON_HPP_
 
+// NOTICE: here must not be #include <boost/asio.hpp> because this header is used by
+// channel.hpp, where declared asio_handler_* functions, which must be BEFORE asio.hpp
+
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/sources/severity_channel_logger.hpp>
 #include <boost/log/trivial.hpp>
@@ -28,7 +31,7 @@
 using boost::log::trivial::severity_level;
 typedef boost::log::sources::severity_channel_logger<severity_level, std::string> logger;
 
-namespace boost { namespace asio { namespace ip {} namespace placeholders {} } }
+namespace boost { namespace asio { namespace ip {} namespace placeholders {} namespace local {} } }
 
 using boost::system::system_error;
 using boost::system::error_code;
@@ -37,5 +40,6 @@ namespace keywords = boost::log::keywords;
 namespace asio = boost::asio;
 namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
+namespace local = asio::local;
 
 #endif /* COMMON_HPP_ */
