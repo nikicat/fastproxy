@@ -84,13 +84,18 @@ class Test(unittest.TestCase):
         self.assertEqual(request, '{0} / HTTP/1.0\r\n\r\n'.format(method))
         
     def test_statistics(self):
-        self.test_http()
         self.stat = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.stat.connect(self.stat_sock)
+        self.test_http()
+        self.c.close()
         self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions\n')
         self.assertEqual(self.stat.recv(64), '1\t0\t1\t1\n')
+        self.test_http()
+        self.c.close()
+        self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions\n')
+        self.assertEqual(self.stat.recv(64), '2\t0\t1\t1\n')
 
 if __name__ == "__main__":
-    #import sys
-    #sys.argv = ['', 'Test.test_statistics']
+    import sys
+    sys.argv = ['', 'Test.test_statistics']
     unittest.main()
