@@ -20,31 +20,6 @@ statistics& statistics::instance()
     return *instance_;
 }
 
-class statistics::dumper
-{
-public:
-    dumper(const queue* q, std::size_t count)
-    : q(q)
-    , count(count)
-    {
-    }
-
-    void dump(std::ostream& stream) const
-    {
-        q->dump(stream, count);
-    }
-
-private:
-    const queue* q;
-    std::size_t count;
-};
-
-std::ostream& operator << (std::ostream& stream, const statistics::dumper& dumper)
-{
-    dumper.dump(stream);
-    return stream;
-}
-
 bool operator < (const statistics_session& lhs, const statistics_session& rhs)
 {
     return &lhs < &rhs;
@@ -110,24 +85,56 @@ std::string statistics::process_request(const std::string& request) const
     boost::split(tokens, request, boost::is_any_of(" \t,"));
     for (split_vector_type::const_iterator it = tokens.begin(); it != tokens.end(); ++it)
     {
-        std::size_t value = get_statistic(*it);
-        if (value == std::numeric_limits<std::size_t>::max())
-            response << "???";
-        else
-            response << value;
+        try
+        {
+            response << get_statistic(*it);
+        }
+        catch (const boost::bad_index& e)
+        {
+            response << e.what() << "?";
+        }
+        catch (const std::invalid_argument& e)
+        {
+            response << e.what() << "?";
+        }
+        catch (const boost::bad_lexical_cast& e)
+        {
+            response << "need_integer";
+        }
         response << (it + 1 == tokens.end() ? '\n' : '\t');
     }
 
     return response.str();
 }
 
-std::size_t statistics::get_statistic(const std::string& name) const
+statistics::value_t statistics::get_statistic(const std::string& name) const
 {
     for (counters_t::const_iterator it = counters.begin(); it != counters.end(); ++it)
         if (name.compare(it->first) == 0)
             return it->second;
 
-    return std::numeric_limits<std::size_t>::max();
+    typedef std::vector<std::string> split_vector_type;
+    split_vector_type tokens;
+    if (boost::split(tokens, name, boost::is_any_of(".")).size() == 3)
+    {
+        for (queues_t::const_iterator it = queues.begin(); it != queues.end(); ++it)
+        {
+            if (tokens[0].compare(it->first) == 0)
+            {
+                const std::size_t count = boost::lexical_cast<std::size_t>(tokens[2]);
+                if (tokens[1] == "max")
+                    return it->second->max(count);
+                else if (tokens[1] == "min")
+                    return it->second->min(count);
+                else if (tokens[1] == "avg")
+                    return it->second->avg(count);
+                else
+                    throw std::invalid_argument(tokens[1]);
+            }
+        }
+    }
+
+    throw boost::bad_index(name.c_str());
 }
 
 void statistics::increment(const char* name, std::size_t value)

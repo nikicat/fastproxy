@@ -86,14 +86,21 @@ class Test(unittest.TestCase):
     def test_statistics(self):
         self.stat = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.stat.connect(self.stat_sock)
+        
         self.test_http()
         self.c.close()
-        self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions\n')
-        self.assertEqual(self.stat.recv(64), '1\t0\t1\t1\n')
+        self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions unexisting_stat\n')
+        self.assertEqual(self.stat.recv(64), '1\t0\t1\t1\tunexisting_stat?\n')
+        
         self.test_http()
         self.c.close()
-        self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions\n')
-        self.assertEqual(self.stat.recv(64), '2\t0\t1\t1\n')
+        self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions unexisting_stat\n')
+        self.assertEqual(self.stat.recv(64), '2\t0\t1\t1\tunexisting_stat?\n')
+        
+        self.stat.send('session_time.max.1\n')
+        stat = self.stat.recv(64).split('\n')[0]
+        print stat
+        self.assertTrue(stat.isdigit(), '{0} must be digits'.format(stat))
 
 if __name__ == "__main__":
     import sys

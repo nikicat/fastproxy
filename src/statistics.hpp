@@ -15,6 +15,7 @@
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/asio.hpp>
+#include <boost/variant.hpp>
 
 #include "stat_sess.hpp"
 #include "common.hpp"
@@ -28,8 +29,8 @@ public:
 
     static statistics& instance();
 
-    template<typename value_t>
-    static void push(const char* name, value_t value);
+    template<typename value_type>
+    static void push(const char* name, value_type value);
 
     static void increment(const char* name, std::size_t value = 1);
     static void decrement(const char* name, std::size_t value = 1);
@@ -45,7 +46,8 @@ protected:
     void start_session(statistics_session* new_session);
 
 private:
-    std::size_t get_statistic(const std::string& name) const;
+    typedef boost::variant<std::size_t, double> value_t;
+    value_t get_statistic(const std::string& name) const;
 
     template<typename value_t>
     void push_(const char* name, value_t value);
@@ -53,14 +55,13 @@ private:
     void increment_(const char* name, std::size_t value);
     void decrement_(const char* name, std::size_t value);
 
-    class dumper;
-    friend std::ostream& operator << (std::ostream& stream, const dumper& dumper);
-
     class queue
     {
     public:
         virtual ~queue() {}
-        virtual void dump(std::ostream& stream, std::size_t count) const = 0;
+        virtual value_t max(std::size_t count) const = 0;
+        virtual value_t min(std::size_t count) const = 0;
+        virtual value_t avg(std::size_t count) const = 0;
     };
 
     template<typename value_type>
@@ -78,9 +79,19 @@ private:
             impl.push_back(elem);
         }
 
-        virtual void dump(std::ostream& stream, std::size_t count) const
+        virtual value_t max(std::size_t count) const
         {
-            stream << impl.back() << " " << average(begin(count), end(count)) << " " << *std::max_element(begin(count), end(count));
+            return *std::max_element(begin(count), end());
+        }
+
+        virtual value_t min(std::size_t count) const
+        {
+            return *std::min_element(begin(count), end());
+        }
+
+        virtual value_t avg(std::size_t count) const
+        {
+            return average(begin(count), end());
         }
 
     protected:
@@ -92,7 +103,7 @@ private:
             return impl.begin() + impl.size() - count;
         }
 
-        typename impl_t::const_iterator end(std::size_t count) const
+        typename impl_t::const_iterator end() const
         {
             return impl.end();
         }
@@ -124,8 +135,8 @@ private:
     static logger log;
 };
 
-template<typename value_t>
-void statistics::push(const char* name, value_t value)
+template<typename value_type>
+void statistics::push(const char* name, value_type value)
 {
     instance().push_(name, value);
 }
