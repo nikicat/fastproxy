@@ -25,9 +25,8 @@ bool operator < (const statistics_session& lhs, const statistics_session& rhs)
     return &lhs < &rhs;
 }
 
-statistics::statistics(asio::io_service& io, const local::stream_protocol::endpoint& stat_ep, std::size_t max_queue_size)
-    : max_queue_size(max_queue_size)
-    , acceptor(io, stat_ep)
+statistics::statistics(asio::io_service& io, const local::stream_protocol::endpoint& stat_ep)
+    : acceptor(io, stat_ep)
 {
     instance_ = this;
 }
@@ -113,46 +112,30 @@ statistics::value_t statistics::get_statistic(const std::string& name) const
         if (name.compare(it->first) == 0)
             return it->second;
 
-    typedef std::vector<std::string> split_vector_type;
-    split_vector_type tokens;
-    if (boost::split(tokens, name, boost::is_any_of(".")).size() == 3)
-    {
-        for (queues_t::const_iterator it = queues.begin(); it != queues.end(); ++it)
-        {
-            if (tokens[0].compare(it->first) == 0)
-            {
-                const std::size_t count = boost::lexical_cast<std::size_t>(tokens[2]);
-                if (tokens[1] == "max")
-                    return it->second->max(count);
-                else if (tokens[1] == "min")
-                    return it->second->min(count);
-                else if (tokens[1] == "avg")
-                    return it->second->avg(count);
-                else
-                    throw std::invalid_argument(tokens[1]);
-            }
-        }
-    }
-
     throw boost::bad_index(name.c_str());
 }
 
-void statistics::increment(const char* name, std::size_t value)
+void statistics::increment(const char* name, long value)
 {
-    instance().increment_(name, value);
+    instance().add(name, value);
 }
 
-void statistics::decrement(const char* name, std::size_t value)
+void statistics::decrement(const char* name, long value)
 {
-    instance().decrement_(name, value);
+    instance().add(name, -value);
 }
 
-void statistics::increment_(const char* name, std::size_t value)
+void statistics::increment(const char* name, double value)
 {
-    counters[name] += value;
+    instance().add(name, value);
 }
 
-void statistics::decrement_(const char* name, std::size_t value)
+template<typename T>
+void statistics::add(const char* name, T value)
 {
-    counters[name] -= value;
+    auto counter = counters.find(name);
+    if (counter == counters.end())
+        counters[name] = value;
+    else
+        boost::get<T>(counter->second) += value;
 }

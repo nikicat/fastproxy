@@ -77,8 +77,8 @@ private:
     char space_for_output_op[size_of_operation];
 
     // statistics data
-    std::size_t splices_count;
-    std::size_t bytes_count;
+    long splices_count;
+    long bytes_count;
     state current_state;
 
     static logger log;

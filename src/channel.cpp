@@ -177,8 +177,6 @@ void channel::finish(const error_code& ec)
 {
     TRACE_ERROR(ec) << parent_session->get_id();
     current_state = finished;
-    statistics::push("splices", splices_count);
-    statistics::push("bytes", bytes_count);
     statistics::increment("total_splices", splices_count);
     statistics::increment("total_bytes", bytes_count);
     parent_session->finished_channel(ec);

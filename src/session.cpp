@@ -33,6 +33,7 @@ ip::tcp::socket& session::socket()
 
 void session::start()
 {
+    timer.restart();
     start_receive_header();
 }
 
@@ -44,7 +45,7 @@ void session::finished_channel(const error_code& ec)
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
     if (opened_channels == 0)
     {
-        statistics::push("session_time", timer.elapsed());
+        statistics::increment("session_time", timer.elapsed());
         finish(ec ? ec : prev_ec);
     }
     else
@@ -58,7 +59,7 @@ void session::finished_channel(const error_code& ec)
             requester.cancel(tmp_ec);
             responder.cancel(tmp_ec);
         }
-        statistics::push("channel_time", timer.elapsed());
+        statistics::increment("channel_time", timer.elapsed());
     }
 }
 
@@ -69,14 +70,13 @@ void session::finish(const error_code& ec)
 
 void session::start_receive_header()
 {
-    timer.restart();
     requester.async_receive(asio::buffer(header_data), boost::bind(&session::finished_receive_header, this,
             placeholders::error(), placeholders::bytes_transferred));
 }
 
 void session::finished_receive_header(const error_code& ec, std::size_t bytes_transferred)
 {
-    statistics::push("request_header_time", timer.elapsed());
+    statistics::increment("request_header_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -86,13 +86,12 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
 void session::start_resolving(const char* peer)
 {
     TRACE() << peer << ":" << port;
-    timer.restart();
     parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
 }
 
 void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
 {
-    statistics::push("resolve_time", timer.elapsed());
+    statistics::increment("resolve_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -103,13 +102,12 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
 void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 {
     TRACE() << peer;
-    timer.restart();
     responder.async_connect(peer, boost::bind(&session::finished_connecting_to_peer, this, placeholders::error()));
 }
 
 void session::finished_connecting_to_peer(const error_code& ec)
 {
-    statistics::push("connected_time", timer.elapsed());
+    statistics::increment("connected_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -128,13 +126,12 @@ void session::start_sending_header()
 {
     prepare_header();
     filter_headers();
-    timer.restart();
     responder.async_send(output_headers, boost::bind(&session::finished_sending_header, this, placeholders::error()));
 }
 
 void session::finished_sending_header(const error_code& ec)
 {
-    statistics::push("send_request_header_time", timer.elapsed());
+    statistics::increment("send_request_header_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -144,13 +141,12 @@ void session::finished_sending_header(const error_code& ec)
 void session::start_sending_connect_response()
 {
     static const char ok_response[] = "HTTP/1.0 200 Connection established\r\n\r\n";
-    timer.restart();
     requester.async_send(asio::const_buffers_1(ok_response, sizeof(ok_response) - 1), boost::bind(&session::finished_sending_connect_response, this, placeholders::error()));
 }
 
 void session::finished_sending_connect_response(const error_code& ec)
 {
-    statistics::push("send_connect_response_time", timer.elapsed());
+    statistics::increment("send_connect_response_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
@@ -160,7 +156,6 @@ void session::finished_sending_connect_response(const error_code& ec)
 
 void session::start_channels()
 {
-    timer.restart();
     request_channel.start();
     response_channel.start();
 }

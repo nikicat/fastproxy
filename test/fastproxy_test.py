@@ -96,13 +96,8 @@ class Test(unittest.TestCase):
         self.c.close()
         self.stat.send('total_sessions current_sessions total_stat_sessions current_stat_sessions unexisting_stat\n')
         self.assertEqual(self.stat.recv(64), '2\t0\t1\t1\tunexisting_stat?\n')
-        
-        self.stat.send('session_time.max.1\n')
-        stat = self.stat.recv(64).split('\n')[0]
-        print stat
-        self.assertTrue(stat.isdigit(), '{0} must be digits'.format(stat))
 
 if __name__ == "__main__":
     import sys
-    sys.argv = ['', 'Test.test_statistics']
+    #sys.argv = ['', 'Test.test_statistics']
     unittest.main()

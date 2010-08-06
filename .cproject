@@ -468,6 +468,7 @@
 <buildTargets>
 <target name="configure" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>waf</buildCommand>
+<buildArguments/>
 <buildTarget>configure</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -475,8 +476,15 @@
 </target>
 <target name="build --build_kind=debug" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>${build_project}/waf</buildCommand>
-<buildArguments/>
 <buildTarget>build --build_kind=debug</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>true</useDefaultCommand>
+<runAllBuilders>true</runAllBuilders>
+</target>
+<target name="clean" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<buildCommand>/home/nbryskin/workspace/fastproxy/waf</buildCommand>
+<buildArguments/>
+<buildTarget>clean</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
@@ -949,6 +957,7 @@
 <buildTargets>
 <target name="configure" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>waf</buildCommand>
+<buildArguments/>
 <buildTarget>configure</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -956,8 +965,15 @@
 </target>
 <target name="build --build_kind=debug" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>${build_project}/waf</buildCommand>
-<buildArguments/>
 <buildTarget>build --build_kind=debug</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>true</useDefaultCommand>
+<runAllBuilders>true</runAllBuilders>
+</target>
+<target name="clean" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<buildCommand>/home/nbryskin/workspace/fastproxy/waf</buildCommand>
+<buildArguments/>
+<buildTarget>clean</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>

@@ -16,7 +16,6 @@
 
 class proxy;
 class statistics;
-class chater;
 
 namespace po = boost::program_options;
 
@@ -39,7 +38,6 @@ private:
     void init_signals();
     void init_statistics();
     void init_proxy();
-    void init_chater();
 
     void start_waiting_for_quit();
     void quit(const error_code& ec);
@@ -51,7 +49,6 @@ private:
     asio::io_service io;
     std::unique_ptr<statistics> s;
     std::unique_ptr<proxy> p;
-    std::unique_ptr<chater> c;
     std::unique_ptr<signal_waiter> sw;
     std::set<std::string> channels;
     static fastproxy* instance_;

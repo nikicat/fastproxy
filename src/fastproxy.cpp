@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <execinfo.h>
 
 #include <iostream>
 #include <algorithm>
@@ -25,7 +26,6 @@
 #include "fastproxy.hpp"
 #include "proxy.hpp"
 #include "statistics.hpp"
-#include "chater.hpp"
 
 fastproxy* fastproxy::instance_;
 logger fastproxy::log = logger(keywords::channel = "fastproxy");
@@ -54,8 +54,6 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
             ("log-level", po::value<int>()->default_value(2), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
-            ("max-queue-size", po::value<std::size_t>()->default_value(1000), "maximal size of statistics tail")
-            ("enable-chat", "enable chat on stdin/stdout")
             ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
             ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests");
 
@@ -141,7 +139,7 @@ void fastproxy::init_statistics()
 {
     const std::string& stat_sock = vm["ingoing-stat"].as<std::string>();
     boost::filesystem::remove(stat_sock);
-    s.reset(new statistics(io, stat_sock, vm["max-queue-size"].as<std::size_t>()));
+    s.reset(new statistics(io, stat_sock));
 }
 
 void fastproxy::init_proxy()
@@ -152,12 +150,6 @@ void fastproxy::init_proxy()
             vm["name-server"].as<ip::udp::endpoint>(),
             boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>()),
             vm["allow-header"].as<string_vec>()));
-}
-
-void fastproxy::init_chater()
-{
-    if (vm.count("enable-chater"))
-        c.reset(new chater(io, 1));
 }
 
 void fastproxy::init_resolver()
@@ -191,23 +183,43 @@ void fastproxy::init(int argc, char* argv[])
 
     init_statistics();
     init_proxy();
-    init_chater();
 }
 
 void fastproxy::run()
 {
     s->start();
     p->start();
-    if (vm.count("enable-chater"))
-        c->start();
 
     io.run();
 }
+
+void terminate()
+{
+    void* array[50];
+    int size = backtrace(array, 50);
+
+    std::cerr << "backtrace returned " << size << " frames" << std::endl;
+
+    char ** messages = backtrace_symbols(array, size);
+
+    for (int i = 0; i < size && messages != NULL; ++i)
+    {
+        std::cerr << "[bt]: (" << i << ") " << messages[i] << std::endl;
+    }
+    std::cerr << std::endl;
+
+    free(messages);
+
+    abort();
+}
+
 
 int main(int argc, char* argv[])
 {
 //    try
 //    {
+//        std::set_terminate(terminate);
+
         fastproxy f;
         f.init(argc, argv);
         f.run();
