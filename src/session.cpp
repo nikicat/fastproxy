@@ -80,7 +80,13 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
-    start_resolving(parse_header(bytes_transferred));
+    const char* dn = parse_header(bytes_transferred);
+    error_code convert_ec;
+    const ip::address& peer_addr = ip::address::from_string(dn, convert_ec);
+    if (convert_ec)
+        start_resolving(dn);
+    else
+        start_connecting_to_peer(ip::tcp::endpoint(peer_addr, port));
 }
 
 void session::start_resolving(const char* peer)

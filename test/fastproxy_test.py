@@ -17,8 +17,8 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.fastproxy = Popen('../build/debug/src/fastproxy \
-            --ingoing-http=127.0.0.1:{0} --receive-timeout={1} \
-            --name-server=8.8.8.8 --allow-header={2} --ingoing-stat={3}'.format(self.port, self.timeout, self.allowed_header, self.stat_sock),
+            --ingoing-http=127.0.0.1:{0} --receive-timeout={1}\
+            --name-server=95.108.198.4 --allow-header={2} --ingoing-stat={3}'.format(self.port, self.timeout, self.allowed_header, self.stat_sock),
             shell=True, env={'LD_LIBRARY_PATH': '/usr/local/lib64'})
         time.sleep(1)
 
@@ -32,16 +32,20 @@ class Test(unittest.TestCase):
 
     def test_simple(self):
         urllib.urlopen('http://ya.ru', proxies={'http': 'http://localhost:{0}'.format(self.port)})
+
+    def test_simple_ip(self):
+        urllib.urlopen('http://77.88.21.3', proxies={'http': 'http://localhost:{0}'.format(self.port)})
         
-    def _send_request(self, headers=None, method='GET'):
+    def _send_request(self, headers=None, method='GET', host='localhost'):
         l = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         l.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         l.bind(('localhost', self.port + 1))
         l.listen(5)
         self.c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        request = '{2} http://localhost:{0} HTTP/1.0\r\n{1}\r\n'.format(self.port + 1, headers or '', method)
+        request = '{2} http://{3}:{0} HTTP/1.0\r\n{1}\r\n'.format(self.port + 1, headers or '', method, host)
         self.c.connect(('localhost', self.port))
         self.c.send(request)
+        l.settimeout(1)
         s, addr = l.accept()
         return s.recv(len(request))
         
@@ -82,7 +86,12 @@ class Test(unittest.TestCase):
         method='DELETE'
         request = self._send_request(method=method)
         self.assertEqual(request, '{0} / HTTP/1.0\r\n\r\n'.format(method))
-        
+
+    def test_resolve_self_ip(self):
+        host = '127.0.0.1'
+        request = self._send_request(host=host)
+        self.assertEqual(request, 'GET / HTTP/1.0\r\n\r\n')
+
     def test_statistics(self):
         self.stat = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.stat.connect(self.stat_sock)
@@ -99,5 +108,5 @@ class Test(unittest.TestCase):
 
 if __name__ == "__main__":
     import sys
-    #sys.argv = ['', 'Test.test_statistics']
+    #sys.argv = ['', 'Test.test_simple_ip']
     unittest.main()
