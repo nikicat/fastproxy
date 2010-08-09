@@ -65,6 +65,8 @@ void session::finished_channel(const error_code& ec)
 
 void session::finish(const error_code& ec)
 {
+    if (ec)
+        statistics::increment("failed_sessions");
     parent_proxy.finished_session(this, ec);
 }
 
