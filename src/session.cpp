@@ -113,10 +113,10 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
         responder.open(peer.protocol());
         responder.bind(parent_proxy.get_outgoing_endpoint());
     }
-    catch (const error_code& ec)
+    catch (const boost::system::system_error& e)
     {
-        TRACE_ERROR(ec);
-        return finish(ec);
+        TRACE_ERROR(e.code());
+        return finish(e.code());
     }
     responder.async_connect(peer, boost::bind(&session::finished_connecting_to_peer, this, placeholders::error()));
 }
