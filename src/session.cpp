@@ -41,8 +41,6 @@ void session::finished_channel(const error_code& ec)
 {
     opened_channels--;
     TRACE_ERROR(ec) << get_id();
-    if (ec)
-        BOOST_LOG_SEV(log, severity_level::error) << system_error(ec, "channel error").what();
     if (opened_channels == 0)
     {
         statistics::increment("session_time", timer.elapsed());
@@ -66,7 +64,10 @@ void session::finished_channel(const error_code& ec)
 void session::finish(const error_code& ec)
 {
     if (ec)
+    {
         statistics::increment("failed_sessions");
+        BOOST_LOG_SEV(log, severity_level::error) << system_error(ec).what();
+    }
     parent_proxy.finished_session(this, ec);
 }
 

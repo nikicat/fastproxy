@@ -176,6 +176,8 @@ void channel::start_waiting()
 void channel::finish(const error_code& ec)
 {
     TRACE_ERROR(ec) << parent_session->get_id();
+    if (ec)
+        BOOST_LOG_SEV(log, severity_level::error) << system_error(ec).what();
     current_state = finished;
     statistics::increment("total_splices", splices_count);
     statistics::increment("total_bytes", bytes_count);
