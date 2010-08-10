@@ -7,6 +7,7 @@ import os.path
 import time
 import sys
 import resource
+import ConfigParser
 
 class daemon(object):
     def __init__(self, name, id):
@@ -14,6 +15,8 @@ class daemon(object):
         self.id = id
         self.nameid = '{0}{1:03}'.format(self.name, self.id)
         self.pid_file = '/var/run/{0}/{1}.pid'.format(self.name, self.nameid)
+        self.args = [name]
+        self.executable = '/usr/local/bin/{0}'.format(name)
 
     def _daemonize(self):
         # Set maximum CPU time to 1 second in child process, after fork() but before exec()
@@ -99,68 +102,42 @@ class daemon(object):
 class fastproxy(daemon):
     def __init__(self, id):
         daemon.__init__(self, self.__class__.__name__, id)
+        source_ip = '192.168.6.{0}'.format(self.id * 2 + 1
+                                           )
+        config = ConfigParser.ConfigParser()
+        config.read('/etc/{0}.conf'.format(self.name))
+        for (name, val) in config.items('DEFAULT'):
+            if name == 'source-ip':
+                source_ip = val
+            elif name == 'allowed-headers':
+                self.args += ['--allow-header=' + header for header in val.split(',')]
+            else:
+                self.args.append('--{0}={1}'.format(name, val))
 
-#        source_ip = '192.168.6.{0}'.format(self.id * 2 + 1)
-        source_ip = '0.0.0.0'
-        name_server = '213.234.192.8'
-#        name_server_source = source_ip
-        name_server_source = '0.0.0.0'
-
-        self.executable = '/home/nbryskin/workspace/fastproxy/build/release/src/{0}'.format(self.name)
-        self.args=[self.name,
+        self.args += [
             '--ingoing-http=127.0.0.1:{0}'.format(self.id + 3200),
             '--ingoing-stat=/var/run/{0}/{1}.sock'.format(self.name, self.nameid),
-            '--allow-header=Allow',
-            '--allow-header=Authorization',
-            '--allow-header=WWW-Authenticate',
-            '--allow-header=Proxy-Authorization',
-            '--allow-header=Proxy-Authenticate',
-            '--allow-header=Cache-Control',
-            '--allow-header=Content-Encoding',
-            '--allow-header=Content-Length',
-            '--allow-header=Content-Type',
-            '--allow-header=Date',
-            '--allow-header=Expires',
-            '--allow-header=Host',
-            '--allow-header=If-Modified-Since',
-            '--allow-header=Last-Modified',
-            '--allow-header=Location',
-            '--allow-header=Pragma',
-            '--allow-header=Accept',
-            '--allow-header=Accept-Charset',
-            '--allow-header=Accept-Encoding',
-            '--allow-header=Accept-Language',
-            '--allow-header=Content-Language',
-            '--allow-header=Mime-Version',
-            '--allow-header=Retry-After',
-            '--allow-header=Title',
-            '--allow-header=Connection',
-            '--allow-header=User-Agent',
-            '--allow-header=Referer',
-            '--allow-header=Cookie',
-            '--allow-header=Set-Cookie',
-            '--name-server={0}'.format(name_server),
             '--outgoing-http={0}'.format(source_ip),
-            '--outgoing-ns={0}'.format(name_server_source),
-            '--receive-timeout=999999'
-#                              '--log-level=9',
-#                              '--log-channel=statistics',
-#                              '--log-channel=proxy',
-#                              '--log-channel=chater',
-#                              '--log-channel=fastproxy',
+            '--outgoing-ns={0}'.format(source_ip),
         ]
 
 def main():
     commands = ['start', 'stop', 'restart', 'reload', 'status']
     command = ''
-    if len(sys.argv) > 1:
+    try:
         command = sys.argv[1]
-    if command not in commands:
-        print('Usage: {0} [{1}]'.format(sys.argv[0], '|'.join(commands)))
-        return
+        if command not in commands:
+            raise BaseException('invalid command')
+        if len(sys.argv) > 2:
+            ids = map(int, sys.argv[2].split(','))
+        else:
+            ids = range(128)
+    except:
+        print('Usage: {0} [{1} [id(,id)]]'.format(sys.argv[0], '|'.join(commands)))
+        return 1
 
     workers = []
-    for i in range(128):
+    for i in ids:
         workers.append(fastproxy(i))
 
     sys.stdout.write('{0}ing.'.format(command))

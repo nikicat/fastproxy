@@ -16,5 +16,6 @@ def build(bld):
 		uselib = 'BOOST UDNS',
 		cxxflags = '-std=c++0x')
 	bld.install_as('/etc/init.d/fastproxy', 'fastproxy.py', chmod=0755)
+	bld.install_as('/etc/fastproxy.conf', 'fastproxy.conf')
 	bld.install_dir('/var/log/fastproxy')
 	bld.install_dir('/var/run/fastproxy')
