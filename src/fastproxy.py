@@ -87,11 +87,13 @@ class daemon(object):
 
     def reload(self):
         os.kill(self.get_pid(), signal.SIGHUP)
-        sys.stdout.write('{0} HUPed\n'.format(self.nameid))
+        sys.stderr.write('{0} HUPed\n'.format(self.nameid))
+        sys.stderr.flush()
         return True
     
     def status(self):
-        sys.stdout.write('\n{0} running [{1}]'.format(self.nameid, self.get_pid()))
+        sys.stderr.write('{0} running [{1}]\n'.format(self.nameid, self.get_pid()))
+        sys.stderr.flush()
         return True
 
 class fastproxy(daemon):
@@ -163,6 +165,8 @@ def main():
 
     sys.stdout.write('{0}ing.'.format(command))
     sys.stdout.flush()
+    
+    result = 0
 
     while workers:
         for w in workers[:]:
@@ -170,14 +174,16 @@ def main():
                 if getattr(w, command)():
                     workers.remove(w)
             except BaseException, e:
+                result = 1
                 sys.stderr.write('{0}: {1}\n'.format(w.nameid, e))
                 sys.stderr.flush()
                 workers.remove(w)
         time.sleep(0.5)
         sys.stdout.write('.')
         sys.stdout.flush()
+    sys.stdout.write('\n')
 
-    return 1
+    return result
 
 if __name__ == '__main__':
     sys.exit(main())
