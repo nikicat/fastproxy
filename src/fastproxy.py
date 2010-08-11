@@ -102,8 +102,7 @@ class daemon(object):
 class fastproxy(daemon):
     def __init__(self, id):
         daemon.__init__(self, self.__class__.__name__, id)
-        source_ip = '192.168.6.{0}'.format(self.id * 2 + 1
-                                           )
+        source_ip = '192.168.6.{0}'.format(self.id * 2 + 1)
         config = ConfigParser.ConfigParser()
         config.read('/etc/{0}.conf'.format(self.name))
         for (name, val) in config.items('DEFAULT'):
@@ -115,7 +114,7 @@ class fastproxy(daemon):
                 self.args.append('--{0}={1}'.format(name, val))
 
         self.args += [
-            '--ingoing-http=127.0.0.1:{0}'.format(self.id + 3200),
+            '--ingoing-http={0}:3128'.format(source_ip),
             '--ingoing-stat=/var/run/{0}/{1}.sock'.format(self.name, self.nameid),
             '--outgoing-http={0}'.format(source_ip),
             '--outgoing-ns={0}'.format(source_ip),
