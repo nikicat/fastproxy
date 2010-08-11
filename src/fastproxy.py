@@ -108,13 +108,13 @@ class fastproxy(daemon):
         for (name, val) in config.items('DEFAULT'):
             if name == 'source-ip':
                 source_ip = val
-            elif name == 'allowed-headers':
-                self.args += ['--allow-header=' + header for header in val.split(',')]
+            elif name == 'listen-port':
+                listen_port = val
             else:
-                self.args.append('--{0}={1}'.format(name, val))
+                self.args += ['--{0}={1}'.format(name, value) for value in val.split(',')]
 
         self.args += [
-            '--ingoing-http={0}:3128'.format(source_ip),
+            '--ingoing-http={0}:{1}'.format(source_ip, listen_port),
             '--ingoing-stat=/var/run/{0}/{1}.sock'.format(self.name, self.nameid),
             '--outgoing-http={0}'.format(source_ip),
             '--outgoing-ns={0}'.format(source_ip),
