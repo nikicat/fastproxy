@@ -100,12 +100,10 @@ class daemon(object):
         return True
 
 class fastproxy(daemon):
-    def __init__(self, id):
+    def __init__(self, id, options):
         daemon.__init__(self, self.__class__.__name__, id)
         source_ip = '192.168.6.{0}'.format(self.id * 2 + 1)
-        config = ConfigParser.ConfigParser()
-        config.read('/etc/{0}.conf'.format(self.name))
-        for (name, val) in config.items('DEFAULT'):
+        for name, val in options.items():
             if name == 'source-ip':
                 source_ip = val
             elif name == 'listen-port':
@@ -123,21 +121,31 @@ class fastproxy(daemon):
 def main():
     commands = ['start', 'stop', 'restart', 'reload', 'status']
     command = ''
+    name = os.path.basename(sys.argv[0]).split('.')[0]
+    ids = []
     try:
         command = sys.argv[1]
         if command not in commands:
             raise BaseException('invalid command')
         if len(sys.argv) > 2:
             ids = map(int, sys.argv[2].split(','))
-        else:
-            ids = range(128)
     except:
         print('Usage: {0} [{1} [id(,id)]]'.format(sys.argv[0], '|'.join(commands)))
         return 1
+    
+    config = ConfigParser.ConfigParser()
+    config.read('/etc/{0}.conf'.format(name))
+    options = dict(config.items('DEFAULT'))
+    if ids == []:
+        if 'instance-id-list' in options:
+            ids = map(int, options['instance-id-list'].split(','))
+            del options['instance-id-list']
+        else:
+            ids = range(128)
 
     workers = []
     for i in ids:
-        workers.append(fastproxy(i))
+        workers.append(fastproxy(i, options))
 
     sys.stdout.write('{0}ing.'.format(command))
     sys.stdout.flush()
