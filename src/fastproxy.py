@@ -1,4 +1,15 @@
 #!/usr/bin/env python
+### BEGIN INIT INFO
+# Provides:          fastproxy
+# Required-Start:    $local_fs $network $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: fast http(s) proxy
+# Description:       This file should be used to start and stop fastproxy.
+### END INIT INFO
+
+# Author: Nikolay Bryskin <devel.niks@gmail.com>
 
 from subprocess import Popen
 import os
@@ -8,6 +19,7 @@ import time
 import sys
 import resource
 import ConfigParser
+from daemon import basic_daemonize
 
 class daemon(object):
     def __init__(self, name, id):
@@ -28,17 +40,25 @@ class daemon(object):
         except OSError, e:
             raise RuntimeError("2nd fork failed: %s [%d]" % (e.strerror, e.errno))
         if pid != 0:
+            if not os.path.isdir(os.path.dirname(self.pid_file)):
+                os.mkdir(os.path.dirname(self.pid_file))
             with open(self.pid_file, 'w+') as f:
                 f.write(str(pid))
-                f.close()
             # child process is all done
             os._exit(0)
     
     def _daemon(self, cmd, args):
+	basic_daemonize()
+        resource.setrlimit(resource.RLIMIT_NOFILE, (65536, 65536))
         p = Popen(executable=cmd, args=args, env={'LD_LIBRARY_PATH': '/usr/local/lib:/usr/local/lib64'},
-                  preexec_fn=self._daemonize, close_fds=True,
+#                  preexec_fn=self._daemonize, close_fds=True,
+                  close_fds=True,
                   stderr=open('/var/log/{0}/{1}.err'.format(self.name, self.nameid), 'a+'),
                   stdout=open('/var/log/{0}/{1}.out'.format(self.name, self.nameid), 'a+'))
+        if not os.path.isdir(os.path.dirname(self.pid_file)):
+            os.mkdir(os.path.dirname(self.pid_file))
+        with open(self.pid_file, 'w+') as f:
+            f.write(str(p.pid))
 
     def get_pid(self):
         pid = open(self.pid_file).read()
@@ -121,7 +141,7 @@ class fastproxy(daemon):
 def main():
     commands = ['start', 'stop', 'restart', 'reload', 'status']
     command = ''
-    name = os.path.basename(sys.argv[0]).split('.')[0]
+    name = 'fastproxy'
     ids = []
     try:
         command = sys.argv[1]
@@ -142,6 +162,9 @@ def main():
             del options['instance-id-list']
         else:
             ids = range(128)
+
+    if 'instance-id-list' in options:
+        del options['instance-id-list']
 
     workers = []
     for i in ids:
