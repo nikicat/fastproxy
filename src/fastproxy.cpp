@@ -57,13 +57,22 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
             ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests");
 
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+    try
+    {
+        po::store(po::parse_command_line(argc, argv, desc), vm);
 
-    if (vm.count("help"))
+        if (vm.count("help"))
+        {
+            std::cout << desc << std::endl;
+            exit(1);
+        }
+
+        po::notify(vm);
+    }
+    catch (const boost::program_options::required_option& exc)
     {
         std::cout << desc << std::endl;
-        exit(1);
+        throw;
     }
 }
 
