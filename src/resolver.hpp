@@ -8,6 +8,7 @@
 #ifndef RESOLVER_HPP_
 #define RESOLVER_HPP_
 
+#include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/bind/placeholders.hpp>

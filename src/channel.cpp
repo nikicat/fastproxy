@@ -114,7 +114,7 @@ void channel::input_timeouted(const error_code& ec)
 
 void channel::splice_from_input()
 {
-    error_code ec(0, boost::system::generic_category);
+    error_code ec(0, boost::system::generic_category());
     std::size_t avail = input.available(ec);
     if (ec)
         return finish(ec);
@@ -122,7 +122,7 @@ void channel::splice_from_input()
     if (avail == 0)
     {
         TRACE() << "connection closed";
-        return finish(error_code(boost::system::errc::not_connected, boost::system::generic_category));
+        return finish(error_code(boost::system::errc::not_connected, boost::system::generic_category()));
     }
     current_state = splicing_input;
 
@@ -142,12 +142,12 @@ void channel::splice_to_output()
     if (!output.is_open())
     {
         TRACE() << "socket closed";
-        return finish(error_code(boost::system::errc::not_a_socket, boost::system::generic_category));
+        return finish(error_code(boost::system::errc::not_a_socket, boost::system::generic_category()));
     }
 
     current_state = splicing_output;
     long spliced;
-    error_code ec(0, boost::system::generic_category);
+    error_code ec(0, boost::system::generic_category());
     splice(pipe[0], output.native(), spliced, ec);
     assert(spliced >= 0);
     pipe_size -= spliced;

@@ -10,6 +10,8 @@
 
 #include <map>
 #include <unistd.h>
+#include <signal.h>
+#include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
