@@ -1,0 +1,51 @@
+# Contributor: Nikolay Bryskin <devel.niks@gmail.com>
+pkgname=fastproxy-git
+pkgver=20100922
+pkgrel=1
+pkgdesc="fastproxy - fast http proxy written using boost"
+arch=('i386' 'x86_64')
+url=""
+license=('GPLv3+')
+groups=()
+depends=()
+makedepends=('git' 'gcc' 'boost' 'boost-log')
+provides=('fastproxy')
+conflicts=('fastproxy')
+replaces=()
+backup=()
+options=(!strip)
+install=
+source=()
+noextract=()
+md5sums=() #generate with 'makepkg -g'
+
+_gitroot="git://git.yandex.ru/nbryskin/fastproxy.git"
+_gitname="master"
+
+build() {
+  cd "$srcdir"
+  msg "Connecting to GIT server...."
+
+  if [ -d ${_gitroot##*/} ] ; then
+    cd ${_gitroot##*/} && git pull origin
+    msg "The local files are updated."
+  else
+    git clone $_gitroot ${_gitroot##*/}
+  fi
+
+  msg "GIT checkout done or server timeout"
+  msg "Starting make..."
+
+  rm -rf "$srcdir/$_gitname-build"
+  git clone "$srcdir/${_gitroot##*/}" "$srcdir/$_gitname-build"
+  cd "$srcdir/$_gitname-build"
+  git checkout $_gitname
+
+  #
+  # BUILD HERE
+  #
+
+  ./waf --prefix=/usr --build_kind=release configure
+  ./waf --build_kind=release || return 1
+  ./waf --build_kind=release --destdir="$pkgdir/" install
+}
