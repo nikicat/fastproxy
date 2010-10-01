@@ -13,6 +13,7 @@ out = 'build'
 
 def set_options(opt):
 	opt.tool_options('compiler_cxx')
+	opt.tool_options('python')
 	opt.add_option('--build_kind', action='store', default='debug,release', help='build the selected variants')
 
 def configure(conf):
