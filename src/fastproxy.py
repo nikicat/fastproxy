@@ -19,7 +19,6 @@ import time
 import sys
 import resource
 import ConfigParser
-from daemon import basic_daemonize
 
 class daemon(object):
     def __init__(self, name, id):
@@ -29,26 +28,25 @@ class daemon(object):
         self.pid_file = '/var/run/{0}/{1}.pid'.format(self.name, self.nameid)
         self.args = [name]
         self.executable = '/usr/local/bin/{0}'.format(name)
-
+            
     def _daemonize(self):
-        # Set maximum CPU time to 1 second in child process, after fork() but before exec()
-        #daemonize.createDaemon()
+        if os.fork():   # launch child and...
+            os._exit(0) # kill off parent
         os.setsid()
-        resource.setrlimit(resource.RLIMIT_NOFILE, (65536, 65536))
-        try:
-            pid = os.fork()
-        except OSError, e:
-            raise RuntimeError("2nd fork failed: %s [%d]" % (e.strerror, e.errno))
-        if pid != 0:
-            if not os.path.isdir(os.path.dirname(self.pid_file)):
-                os.mkdir(os.path.dirname(self.pid_file))
-            with open(self.pid_file, 'w+') as f:
-                f.write(str(pid))
-            # child process is all done
-            os._exit(0)
-    
+        if os.fork():   # launch child and...
+            os._exit(0) # kill off parent again.
+        os.umask(022)   # Don't allow others to write
+        null=os.open('/dev/null', os.O_RDWR)
+        for i in range(3):
+            try:
+                os.dup2(null, i)
+            except OSError, e:
+                if e.errno != errno.EBADF:
+                    raise
+        os.close(null)
+
     def _daemon(self, cmd, args):
-	basic_daemonize()
+        self._daemonize()
         resource.setrlimit(resource.RLIMIT_NOFILE, (65536, 65536))
         p = Popen(executable=cmd, args=args, env={'LD_LIBRARY_PATH': '/usr/local/lib:/usr/local/lib64'},
 #                  preexec_fn=self._daemonize, close_fds=True,
