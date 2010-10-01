@@ -70,7 +70,7 @@ private:
     int pipe[2];
     long pipe_size;
     session* parent_session;
-    static const std::size_t size_of_operation = sizeof(asio::detail::reactive_null_buffers_op<handler_t*>);
+    static const std::size_t size_of_operation = sizeof(asio::detail::null_buffers_op<handler_t*>);
     handler_t input_handler;
     char space_for_input_op[size_of_operation];
     handler_t output_handler;

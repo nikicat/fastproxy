@@ -18,7 +18,7 @@ def set_options(opt):
 def configure(conf):
 	conf.check_tool('compiler_cxx')
 	conf.check_tool('boost')
-	conf.check_boost(min_version='1.43')
+	conf.check_boost(version='1.43')
 	conf.check_cxx(fragment='#include <udns.h>\nint main(){return 0;}\n', lib='udns', mandatory=True)
 
 	conf.sub_config('src')
