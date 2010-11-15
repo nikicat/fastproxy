@@ -19,19 +19,19 @@ import time
 import sys
 import resource
 import ConfigParser
+import traceback
 
 class daemon(object):
-    def __init__(self, name, id):
+    def __init__(self, name, nameid):
         self.name = name
-        self.id = id
-        self.nameid = '{0}{1:03}'.format(self.name, self.id)
+        self.nameid = nameid
         self.pid_file = '/var/run/{0}/{1}.pid'.format(self.name, self.nameid)
         self.args = [name]
-        self.executable = '/usr/local/bin/{0}'.format(name)
+        self.executable = '/usr/bin/{0}'.format(name)
             
     def _daemonize(self):
         if os.fork():   # launch child and...
-            os._exit(0) # kill off parent
+            return True
         os.setsid()
         if os.fork():   # launch child and...
             os._exit(0) # kill off parent again.
@@ -44,12 +44,15 @@ class daemon(object):
                 if e.errno != errno.EBADF:
                     raise
         os.close(null)
+        return False
 
     def _daemon(self, cmd, args):
-        self._daemonize()
+        sys.stderr.write('daemonizing with args {0}'.format(args))
+        sys.stderr.flush()
+        if self._daemonize():
+            return
         resource.setrlimit(resource.RLIMIT_NOFILE, (65536, 65536))
         p = Popen(executable=cmd, args=args, env={'LD_LIBRARY_PATH': '/usr/local/lib:/usr/local/lib64'},
-#                  preexec_fn=self._daemonize, close_fds=True,
                   close_fds=True,
                   stderr=open('/var/log/{0}/{1}.err'.format(self.name, self.nameid), 'a+'),
                   stdout=open('/var/log/{0}/{1}.out'.format(self.name, self.nameid), 'a+'))
@@ -57,6 +60,7 @@ class daemon(object):
             os.mkdir(os.path.dirname(self.pid_file))
         with open(self.pid_file, 'w+') as f:
             f.write(str(p.pid))
+        os._exit(0)
 
     def get_pid(self):
         pid = open(self.pid_file).read()
@@ -93,12 +97,23 @@ class daemon(object):
     def start(self):
         try:
             pid = self.get_pid()
-        except BaseException:
+        except Exception:
+            sys.stderr.write('{0} starting..\n'.format(self.nameid))
+            sys.stderr.flush()
             self.clean_pid()
             self._daemon(self.executable, self.args)
-            self.get_pid()
+            self.start = self.check_started
+        else:
+            raise Exception('already running with pid {0}'.format(pid))
+
+    def check_started(self):
+        try:
+            pid = self.get_pid()
+            sys.stderr.write('{0} started with pid {1}\n'.format(self.nameid, pid))
+            sys.stderr.flush()
             return True
-        raise Exception('already running with pid {0}'.format(pid))
+        except:
+            return False
     
     def restart(self):
         if self.stop():
@@ -118,13 +133,10 @@ class daemon(object):
         return True
 
 class fastproxy(daemon):
-    def __init__(self, id, options):
-        daemon.__init__(self, self.__class__.__name__, id)
-        source_ip = '192.168.6.{0}'.format(self.id * 2 + 1)
+    def __init__(self, nameid, source_ip, options):
+        daemon.__init__(self, self.__class__.__name__, nameid)
         for name, val in options.items():
-            if name == 'source-ip':
-                source_ip = val
-            elif name == 'listen-port':
+            if name == 'listen-port':
                 listen_port = val
             else:
                 self.args += ['--{0}={1}'.format(name, value) for value in val.split(',')]
@@ -155,18 +167,25 @@ def main():
     config.read('/etc/{0}.conf'.format(name))
     options = dict(config.items('DEFAULT'))
     if ids == []:
+        def numbers_to_ids(numbers):
+            for i in numbers:
+                yield ('homer{0:03}'.format(i), '192.168.6.{0}'.format(i * 2 + 1))
+
         if 'instance-id-list' in options:
-            ids = map(int, options['instance-id-list'].split(','))
-            del options['instance-id-list']
+            ids = numbers_to_ids(map(int, options['instance-id-list'].split(',')))
+        if 'ldap' in options:
+            ids = get_ldap_ids(options['ldap'])
         else:
-            ids = range(128)
+            ids = numbers_to_ids(range(128))
 
     if 'instance-id-list' in options:
         del options['instance-id-list']
+    if 'ldap' in options:
+        del options['ldap']
 
     workers = []
-    for i in ids:
-        workers.append(fastproxy(i, options))
+    for id, ip in ids:
+        workers.append(fastproxy(id, ip, options))
 
     sys.stdout.write('{0}ing.'.format(command))
     sys.stdout.flush()
@@ -178,9 +197,10 @@ def main():
             try:
                 if getattr(w, command)():
                     workers.remove(w)
-            except BaseException, e:
+            except Exception:
                 result = 1
-                sys.stderr.write('{0}: {1}\n'.format(w.nameid, e))
+                sys.stderr.write('{0}:\n'.format(w.nameid))
+                traceback.print_exc(file=sys.stderr)
                 sys.stderr.flush()
                 workers.remove(w)
         time.sleep(0.5)
@@ -189,6 +209,14 @@ def main():
     sys.stdout.write('\n')
 
     return result
+
+def get_ldap_ids(host):
+    import ldap
+    l = ldap.initialize(host)
+    for dn, entry in l.search_s('dc=local,dc=net', ldap.SCOPE_SUBTREE, 'cn=homer*'):
+        ip = entry['ipHostNumber'][0].split('.')
+        ip[3] = str(int(ip[3]) + 1)
+        yield (entry['cn'][0], '.'.join(ip))
 
 if __name__ == '__main__':
     sys.exit(main())
