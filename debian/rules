@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+
+DEB_COMPRESS_EXCLUDE := .py
+
+WAF = ./waf
+
+common-configure-arch:: configure-stamp
+configure-stamp:
+	$(WAF) configure --prefix=/usr
+	$(WAF)
+	touch $@
+
+common-build-arch:: build-stamp
+build-stamp:
+	$(WAF) build
+	touch $@
+
+common-install-arch::
+	$(WAF) install --nopyc --nopyo --destdir=$(DEB_DESTDIR)
+
+clean::
+	rm -f build-stamp
+	-$(WAF) distclean

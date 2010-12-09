@@ -1,0 +1,13 @@
+Source: fastproxy
+Section: unknown
+Priority: extra
+Maintainer: Nikolay Bryskin <nbryskin@yandex-team.ru>
+Build-Depends: debhelper (>= 7), libudns-dev, libboost-log1.43-dev, libboost1.43-dev
+Standards-Version: 3.8.3
+Homepage: <insert the upstream URL, if relevant>
+
+Package: fastproxy
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
