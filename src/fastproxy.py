@@ -20,6 +20,7 @@ import sys
 import resource
 import ConfigParser
 import traceback
+from itertools import chain
 
 class daemon(object):
     def __init__(self, name, nameid):
@@ -28,7 +29,7 @@ class daemon(object):
         self.pid_file = '/var/run/{0}/{1}.pid'.format(self.name, self.nameid)
         self.args = [name]
         self.executable = '/usr/bin/{0}'.format(name)
-            
+
     def _daemonize(self):
         if os.fork():   # launch child and...
             return True
@@ -69,7 +70,7 @@ class daemon(object):
         if not os.path.isdir('/proc/{0}'.format(pid)):
             raise Exception('stale pid file')
         return int(pid)
-    
+
     def clean_pid(self):
         try:
             os.unlink(self.pid_file)
@@ -114,7 +115,7 @@ class daemon(object):
             return True
         except:
             return False
-    
+
     def restart(self):
         if self.stop():
             return self.start()
@@ -126,7 +127,7 @@ class daemon(object):
         sys.stderr.write('{0} HUPed\n'.format(self.nameid))
         sys.stderr.flush()
         return True
-    
+
     def status(self):
         sys.stderr.write('{0} running [{1}]\n'.format(self.nameid, self.get_pid()))
         sys.stderr.flush()
@@ -145,8 +146,11 @@ class fastproxy(daemon):
             '--ingoing-http={0}:{1}'.format(source_ip, listen_port),
             '--ingoing-stat=/var/run/{0}/{1}.sock'.format(self.name, self.nameid),
             '--outgoing-http={0}'.format(source_ip),
-            '--outgoing-ns={0}'.format(source_ip),
         ]
+
+def numbers_to_ids(homers):
+    for i in homers:
+        yield ('homer{0:03}'.format(int(i)), '192.168.6.{0}'.format(int(i) * 2 + 1))
 
 def main():
     commands = ['start', 'stop', 'restart', 'reload', 'status']
@@ -157,26 +161,22 @@ def main():
         command = sys.argv[1]
         if command not in commands:
             raise BaseException('invalid command')
-        if len(sys.argv) > 2:
-            ids = map(int, sys.argv[2].split(','))
     except:
         print('Usage: {0} [{1} [id(,id)]]'.format(sys.argv[0], '|'.join(commands)))
         return 1
-    
+
     config = ConfigParser.ConfigParser()
     config.read('/etc/{0}.conf'.format(name))
     options = dict(config.items('DEFAULT'))
-    if ids == []:
-        def numbers_to_ids(numbers):
-            for i in numbers:
-                yield ('homer{0:03}'.format(i), '192.168.6.{0}'.format(i * 2 + 1))
-
-        if 'instance-id-list' in options:
-            ids = numbers_to_ids(map(int, options['instance-id-list'].split(',')))
-        if 'ldap' in options:
-            ids = get_ldap_ids(options['ldap'])
+    if 'ldap' in options:
+        if len(sys.argv) > 2:
+            ids = get_ldap_ids(options['ldap'], sys.argv[2])
         else:
-            ids = numbers_to_ids(range(128))
+            ids = chain(get_ldap_ids(options['ldap'], 'homer*'), get_ldap_ids(options['ldap'], 'tunnel*'))
+    elif 'instance-id-list' in options:
+        ids = numbers_to_ids(map(int, options['instance-id-list'].split(',')))
+    else:
+        ids = numbers_to_ids(range(128))
 
     if 'instance-id-list' in options:
         del options['instance-id-list']
@@ -189,7 +189,7 @@ def main():
 
     sys.stdout.write('{0}ing.'.format(command))
     sys.stdout.flush()
-    
+
     result = 0
 
     while workers:
@@ -210,10 +210,10 @@ def main():
 
     return result
 
-def get_ldap_ids(host):
+def get_ldap_ids(host, mask):
     import ldap
     l = ldap.initialize(host)
-    for dn, entry in l.search_s('dc=local,dc=net', ldap.SCOPE_SUBTREE, 'cn=homer*'):
+    for dn, entry in l.search_s('dc=local,dc=net', ldap.SCOPE_SUBTREE, 'cn={0}'.format(mask)):
         ip = entry['ipHostNumber'][0].split('.')
         ip[3] = str(int(ip[3]) + 1)
         yield (entry['cn'][0], '.'.join(ip))
