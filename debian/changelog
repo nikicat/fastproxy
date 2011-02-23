@@ -1,3 +1,15 @@
+fastproxy (0.2ubuntu1) lucid; urgency=low
+
+  * Added zabbix-agent-ng support script
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sat, 29 Jan 2011 21:47:50 +0300
+
+fastproxy (0.1ubuntu1) lucid; urgency=low
+
+  * Fixed Ubuntu packaging scripts 
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sat, 29 Jan 2011 21:12:25 +0300
+
 fastproxy (0.1) unstable; urgency=low
 
   * Initial Release.
