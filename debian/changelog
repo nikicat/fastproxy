@@ -1,3 +1,15 @@
+fastproxy (0.2.2) lucid; urgency=low
+
+  * Added options to change statistics socket user and group
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Wed, 23 Feb 2011 18:00:45 +0300
+
+fastproxy (0.2.1) lucid; urgency=low
+
+  * Fixed zabbix-agent script: search for socket file as-is
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Wed, 23 Feb 2011 15:53:15 +0300
+
 fastproxy (0.2ubuntu1) lucid; urgency=low
 
   * Added zabbix-agent-ng support script

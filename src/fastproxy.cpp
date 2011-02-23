@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <execinfo.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include <iostream>
 #include <algorithm>
@@ -55,7 +57,9 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("log-level", po::value<int>()->default_value(2), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
             ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
-            ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests");
+            ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests")
+            ("stat-socket-user", po::value<std::string>()->default_value(getpwuid(getuid())->pw_name), "user for statistics socket")
+            ("stat-socket-group", po::value<std::string>()->default_value(getgrgid(getgid())->gr_name), "group for statistics socket");
 
     try
     {
@@ -149,6 +153,11 @@ void fastproxy::init_statistics()
     const std::string& stat_sock = vm["ingoing-stat"].as<std::string>();
     boost::filesystem::remove(stat_sock);
     s.reset(new statistics(io, stat_sock));
+    int res = chown(stat_sock.c_str(),
+        getpwnam(vm["stat-socket-user"].as<std::string>().c_str())->pw_uid,
+        getgrnam(vm["stat-socket-group"].as<std::string>().c_str())->gr_gid);
+    if (res != 0)
+        perror(("chown(" + stat_sock + ", " + vm["stat-socket-user"].as<std::string>() + ", " + vm["stat-socket-group"].as<std::string>() + ")").c_str());
 }
 
 void fastproxy::init_proxy()

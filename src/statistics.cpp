@@ -26,7 +26,7 @@ bool operator < (const statistics_session& lhs, const statistics_session& rhs)
 }
 
 statistics::statistics(asio::io_service& io, const local::stream_protocol::endpoint& stat_ep)
-    : acceptor(io, stat_ep)
+    : acceptor(io, stat_ep, true)
 {
     instance_ = this;
 }
