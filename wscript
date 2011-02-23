@@ -42,7 +42,7 @@ def configure(conf):
 def build(bld):
 
 	bld.add_subdirs('src')
-	bld.install_as('/etc/zabbix/bin/zbx_fastproxy.py', 'scripts/zbx_fastproxy.py')
+	bld.install_as('/etc/zabbix/bin/zbx_fastproxy.py', 'scripts/zbx_fastproxy.py', chmod=755)
 
 	# enable the debug or the release variant, depending on the one wanted
 	for obj in bld.all_task_gen[:]:
