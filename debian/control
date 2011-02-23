@@ -1,13 +1,15 @@
 Source: fastproxy
-Section: unknown
+Section: misc
 Priority: extra
 Maintainer: Nikolay Bryskin <nbryskin@yandex-team.ru>
-Build-Depends: debhelper (>= 7), libudns-dev, libboost-log1.43-dev, libboost1.43-dev
-Standards-Version: 3.8.3
-Homepage: <insert the upstream URL, if relevant>
+Build-Depends: debhelper (>= 7), libudns-dev, libboost-log1.43-dev, libboost1.43-dev, cdbs
+Standards-Version: 3.9.1
+Homepage: http://git.yandex.ru/nbryskin/fastproxy.git
 
 Package: fastproxy
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Depends: ${shlibs:Depends}, ${misc:Depends}, python (>= 2.6)
+Description: Fast and reliable HTTP proxy server, no caching
+ Fastproxy is simple, fast and reliable event-based HTTP proxy server
+ with built-in stub DNS resolver. Written mostly in C++ and have
+ some python startup scripts

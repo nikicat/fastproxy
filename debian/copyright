@@ -4,17 +4,15 @@ This work was packaged for Debian by:
 
 It was downloaded from:
 
-    <url://example.com>
+    http://git.yandex.ru/nbryskin/fastproxy.git
 
 Upstream Author(s):
 
-    <put author's name and email here>
-    <likewise for another author>
+    Nikolay Bryskin <nbryskin@yandex-team.ru>
 
 Copyright:
 
-    <Copyright (C) YYYY Firstname Lastname>
-    <likewise for another author>
+    Copyright (C) 2010 Nikolay Bryskin
 
 License:
 
@@ -45,6 +43,3 @@ The Debian packaging is:
 # If you just want it to be GPL version 3, leave the following line in.
 
 and is licensed under the GPL version 3, see above.
-
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
