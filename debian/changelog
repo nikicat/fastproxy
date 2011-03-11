@@ -1,12 +1,31 @@
+fastproxy (0.2.4) lucid; urgency=low
+
+  * Fixed connected_time statistic: do not count failed connections
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Mon, 28 Feb 2011 11:29:57 +0300
+
+fastproxy (0.2.3) lucid; urgency=low
+
+  * New option: --stop-after-init (Upstart support)
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sat, 26 Feb 2011 15:14:27 +0300
+
 fastproxy (0.2.2) lucid; urgency=low
 
   * Added options to change statistics socket user and group
+  * zbx_fastproxy.py: install with execute permissions
+  * zbx_fastproxy.py: return 0 for non-existent statistics values (to avoid
+    backtraces in zabbix-agent logs)
+  * zbx_fastproxy.py: return 0 for non-existent statistics sockets
+  * zbx_fastproxy.py: aggregation support (only `sum' for now using `*') 
 
- -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Wed, 23 Feb 2011 18:00:45 +0300
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Thu, 24 Feb 2011 03:21:16 +0300
 
 fastproxy (0.2.1) lucid; urgency=low
 
-  * Fixed zabbix-agent script: search for socket file as-is
+  * Fixed zabbix-agent script: search for socket file with name matching
+    tunnel name in LDAP (e.g. without replacing `tunnel' with `homer' and
+    vice versa)
 
  -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Wed, 23 Feb 2011 15:53:15 +0300
 
