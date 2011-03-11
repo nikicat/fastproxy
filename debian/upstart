@@ -1,0 +1,10 @@
+expect stop
+stop on stopping network or fastproxy-all-stop
+respawn
+respawn limit 10 5
+limit nofile 65536 65536
+instance $ARGS
+script
+	CONF_ARGS="`sed -e 's/^/ --/' /etc/fastproxy.conf | tr -d '\n'`"
+	exec /usr/bin/fastproxy $ARGS $CONF_ARGS --stop-after-init=1
+end script

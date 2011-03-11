@@ -59,7 +59,8 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
             ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests")
             ("stat-socket-user", po::value<std::string>()->default_value(getpwuid(getuid())->pw_name), "user for statistics socket")
-            ("stat-socket-group", po::value<std::string>()->default_value(getgrgid(getgid())->gr_name), "group for statistics socket");
+            ("stat-socket-group", po::value<std::string>()->default_value(getgrgid(getgid())->gr_name), "group for statistics socket")
+            ("stop-after-init", po::value<bool>()->default_value(false), "raise SIGSTOP after initialization (Upstart support)");
 
     try
     {
@@ -201,6 +202,9 @@ void fastproxy::init(int argc, char* argv[])
 
     init_statistics();
     init_proxy();
+
+    if (vm["stop-after-init"].as<bool>())
+        raise(SIGSTOP);
 }
 
 void fastproxy::run()
