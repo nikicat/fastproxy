@@ -126,10 +126,10 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 
 void session::finished_connecting_to_peer(const error_code& ec)
 {
-    statistics::increment("connected_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
         return finish(ec);
+    statistics::increment("connected_time", timer.elapsed());
     switch (method)
     {
         case CONNECT:
