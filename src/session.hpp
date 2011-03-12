@@ -44,6 +44,9 @@ protected:
     void start_resolving(const char* peer);
     void finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end);
 
+    void start_sending_error(http_error_code httpec);
+    void finished_sending_error(const error_code& ec, std::size_t bytes_transferred);
+
     void start_connecting_to_peer(const ip::tcp::endpoint& peer);
     void finished_connecting_to_peer(const error_code& ec);
 

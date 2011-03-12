@@ -42,4 +42,16 @@ namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace local = asio::local;
 
+enum http_error_code
+{
+    HTTP_BEGIN = 500,
+    HTTP_500 = 500,
+    HTTP_501,
+    HTTP_502,
+    HTTP_503,
+    HTTP_504,
+    HTTP_END,
+};
+
+
 #endif /* COMMON_HPP_ */

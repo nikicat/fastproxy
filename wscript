@@ -44,6 +44,8 @@ def build(bld):
 	bld.add_subdirs('src')
 	bld.install_as('/etc/zabbix/bin/zbx_fastproxy.py', 'scripts/zbx_fastproxy.py', chmod=755)
 	bld.install_as('/etc/fastproxy.conf', 'conf/fastproxy.conf')
+        for i in '500 502 503 504'.split():
+		bld.install_as('/etc/fastproxy/errors/{0}.http'.format(i), 'conf/errors/{0}.http'.format(i))
 
 	# enable the debug or the release variant, depending on the one wanted
 	for obj in bld.all_task_gen[:]:

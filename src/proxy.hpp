@@ -21,7 +21,8 @@ class proxy : public boost::noncopyable
 public:
     proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http,
           const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server,
-          const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers);
+          const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers,
+          std::string error_pages_dir);
 
     // called by main (parent)
     void start();
@@ -39,6 +40,8 @@ public:
 
     const headers_type& get_allowed_headers() const;
 
+    asio::const_buffer get_error_page(http_error_code httpec) const;
+
 protected:
     void start_accept();
 
@@ -54,6 +57,7 @@ private:
     session_cont sessions;
     headers_type allowed_headers;
     std::vector<std::string> headers_cont;
+    std::vector<char> error_pages[HTTP_END - HTTP_BEGIN];
     static logger log;
 };
 

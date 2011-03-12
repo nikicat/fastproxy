@@ -6,14 +6,17 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <functional>
 #include <boost/bind.hpp>
+#include <boost/format.hpp>
 
 #include "proxy.hpp"
 #include "statistics.hpp"
 #include "session.hpp"
 
 logger proxy::log = logger(keywords::channel = "proxy");
+typedef std::ios ios;
 
 bool session_less(const session& lhs, const session& rhs)
 {
@@ -22,7 +25,8 @@ bool session_less(const session& lhs, const session& rhs)
 
 proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http,
              const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server,
-             const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers)
+             const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers,
+             const std::string error_pages_dir)
     : acceptor(io, inbound)
     , resolver_(io, outbound_ns, name_server)
     , outbound_http(outbound_http)
@@ -32,6 +36,17 @@ proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::t
 {
     for (auto it = headers_cont.begin(); it != headers_cont.end(); ++it)
         this->allowed_headers.insert(it->c_str());
+
+    for (int httpec = HTTP_BEGIN; httpec < HTTP_END; ++httpec)
+    {
+        std::ifstream page_file((boost::format("%1%/%2%.http") % error_pages_dir % httpec).str(), ios::in|ios::binary|ios::ate);
+        if (!page_file.is_open())
+            continue;
+        std::ifstream::pos_type size = page_file.tellg();
+        page_file.seekg(0, ios::beg);
+        error_pages[httpec - HTTP_BEGIN].resize(size);
+        page_file.read(&*(error_pages[httpec - HTTP_BEGIN].begin()), size);
+    }
 }
 
 // called by main (parent)
@@ -113,4 +128,12 @@ const time_duration& proxy::get_receive_timeout() const
 const headers_type& proxy::get_allowed_headers() const
 {
     return allowed_headers;
+}
+
+asio::const_buffer proxy::get_error_page(http_error_code httpec) const
+{
+    if (httpec < HTTP_BEGIN || httpec >= HTTP_END)
+        return asio::const_buffer();
+    const std::vector<char>& error_page = error_pages[httpec - HTTP_BEGIN];
+    return asio::const_buffer(&*error_page.begin(), error_page.size());
 }

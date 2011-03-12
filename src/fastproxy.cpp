@@ -60,7 +60,8 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests")
             ("stat-socket-user", po::value<std::string>()->default_value(getpwuid(getuid())->pw_name), "user for statistics socket")
             ("stat-socket-group", po::value<std::string>()->default_value(getgrgid(getgid())->gr_name), "group for statistics socket")
-            ("stop-after-init", po::value<bool>()->default_value(false), "raise SIGSTOP after initialization (Upstart support)");
+            ("stop-after-init", po::value<bool>()->default_value(false), "raise SIGSTOP after initialization (Upstart support)")
+            ("error-page-dir", po::value<std::string>()->default_value("/etc/fastproxy/errors"), "directory where error pages are located");
 
     try
     {
@@ -168,7 +169,8 @@ void fastproxy::init_proxy()
             vm["outgoing-ns"].as<ip::udp::endpoint>(),
             vm["name-server"].as<ip::udp::endpoint>(),
             boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>()),
-            vm["allow-header"].as<string_vec>()));
+            vm["allow-header"].as<string_vec>(),
+            vm["error-page-dir"].as<std::string>()));
 }
 
 void fastproxy::init_resolver()

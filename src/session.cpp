@@ -103,9 +103,26 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
     statistics::increment("resolve_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
-        return finish(ec);
+    {
+        statistics::increment("resolve_failed");
+        start_sending_error(HTTP_503);
+        return;
+    }
     // TODO: cycle throw all addresses
     start_connecting_to_peer(ip::tcp::endpoint(*begin, port));
+}
+
+void session::start_sending_error(http_error_code httpec)
+{
+    requester.async_send(asio::const_buffers_1(parent_proxy.get_error_page(httpec)), boost::bind(&session::finished_sending_error, this, placeholders::error(), placeholders::bytes_transferred));
+}
+
+void session::finished_sending_error(const error_code& ec, std::size_t bytes_transferred)
+{
+    TRACE_ERROR(ec);
+    if (ec)
+        statistics::increment("send_error_failed");
+    finish(ec);
 }
 
 void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
