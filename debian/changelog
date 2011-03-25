@@ -1,3 +1,15 @@
+fastproxy (0.2.7) lucid; urgency=low
+
+  * zbx_fastproxy: optimized cumulative statistics retrieving
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Fri, 25 Mar 2011 02:06:37 +0300
+
+fastproxy (0.2.6) lucid; urgency=low
+
+  * New: multiple listen addresses support
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Wed, 16 Mar 2011 20:24:35 +0300
+
 fastproxy (0.2.5) lucid; urgency=low
 
   * New: return 503 error if could not resolve target host name

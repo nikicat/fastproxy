@@ -81,26 +81,40 @@ std::string statistics::process_request(const std::string& request) const
 
     std::ostringstream response;
     split_vector_type tokens;
-    boost::split(tokens, request, boost::is_any_of(" \t,"));
-    for (split_vector_type::const_iterator it = tokens.begin(); it != tokens.end(); ++it)
+    if (request == "show stat")
     {
-        try
+        for (counters_t::const_iterator it = counters.begin(); it != counters.end(); ++it)
+            response << it->first << "\t";
+        response.seekp(-1, std::ios_base::cur);
+        response << "\n";
+        for (counters_t::const_iterator it = counters.begin(); it != counters.end(); ++it)
+            response << it->second << "\t";
+        response.seekp(-1, std::ios_base::cur);
+        response << "\n";
+    }
+    else
+    {
+        boost::split(tokens, request, boost::is_any_of(" \t,"));
+        for (split_vector_type::const_iterator it = tokens.begin(); it != tokens.end(); ++it)
         {
-            response << get_statistic(*it);
+            try
+            {
+                response << get_statistic(*it);
+            }
+            catch (const boost::bad_index& e)
+            {
+                response << e.what() << "?";
+            }
+            catch (const std::invalid_argument& e)
+            {
+                response << e.what() << "?";
+            }
+            catch (const boost::bad_lexical_cast& e)
+            {
+                response << "need_integer";
+            }
+            response << (it + 1 == tokens.end() ? '\n' : '\t');
         }
-        catch (const boost::bad_index& e)
-        {
-            response << e.what() << "?";
-        }
-        catch (const std::invalid_argument& e)
-        {
-            response << e.what() << "?";
-        }
-        catch (const boost::bad_lexical_cast& e)
-        {
-            response << "need_integer";
-        }
-        response << (it + 1 == tokens.end() ? '\n' : '\t');
     }
 
     return response.str();
