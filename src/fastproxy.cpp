@@ -43,13 +43,14 @@ fastproxy& fastproxy::instance()
 }
 
 typedef std::vector<std::string> string_vec;
+typedef std::vector<ip::tcp::endpoint> endpoint_vec;
 
 void fastproxy::parse_config(int argc, char* argv[])
 {
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "produce help message")
-            ("ingoing-http", po::value<ip::tcp::endpoint>()->required(), "http listening address")
+            ("ingoing-http", po::value<endpoint_vec>()->required(), "http listening addresses")
             ("ingoing-stat", po::value<std::string>()->required(), "statistics listening socket")
             ("outgoing-http", po::value<ip::tcp::endpoint>()->default_value(ip::tcp::endpoint()), "outgoing address for HTTP requests")
             ("outgoing-ns", po::value<ip::udp::endpoint>()->default_value(ip::udp::endpoint()), "outgoing address for NS lookup")
@@ -164,7 +165,7 @@ void fastproxy::init_statistics()
 
 void fastproxy::init_proxy()
 {
-    p.reset(new proxy(io, vm["ingoing-http"].as<ip::tcp::endpoint>(),
+    p.reset(new proxy(io, vm["ingoing-http"].as<endpoint_vec>(),
             vm["outgoing-http"].as<ip::tcp::endpoint>(),
             vm["outgoing-ns"].as<ip::udp::endpoint>(),
             vm["name-server"].as<ip::udp::endpoint>(),

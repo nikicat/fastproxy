@@ -23,12 +23,11 @@ bool session_less(const session& lhs, const session& rhs)
     return lhs.get_id() < rhs.get_id();
 }
 
-proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::tcp::endpoint& outbound_http,
+proxy::proxy(asio::io_service& io, std::vector<ip::tcp::endpoint> inbound, const ip::tcp::endpoint& outbound_http,
              const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server,
              const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers,
              const std::string error_pages_dir)
-    : acceptor(io, inbound)
-    , resolver_(io, outbound_ns, name_server)
+    : resolver_(io, outbound_ns, name_server)
     , outbound_http(outbound_http)
     , receive_timeout(receive_timeout)
     , sessions(std::ptr_fun(session_less))
@@ -47,12 +46,20 @@ proxy::proxy(asio::io_service& io, const ip::tcp::endpoint& inbound, const ip::t
         error_pages[httpec - HTTP_BEGIN].resize(size);
         page_file.read(&*(error_pages[httpec - HTTP_BEGIN].begin()), size);
     }
+
+    assert(!inbound.empty());
+
+    for (auto it = inbound.begin(); it != inbound.end(); ++it)
+    {
+        this->acceptors.push_back(boost::shared_ptr<ip::tcp::acceptor>(new ip::tcp::acceptor(io, *it)));
+    }
 }
 
 // called by main (parent)
 void proxy::start()
 {
-    start_accept();
+    for (auto it = this->acceptors.begin(); it != acceptors.end(); ++it)
+        start_accept(**it);
     resolver_.start();
     TRACE() << "started";
 }
@@ -74,20 +81,21 @@ void proxy::finished_session(session* session, const boost::system::error_code& 
     statistics::decrement("current_sessions");
 }
 
-void proxy::start_accept()
+void proxy::start_accept(ip::tcp::acceptor& acceptor)
 {
     std::unique_ptr<session> new_sess(new session(acceptor.io_service(), *this));
-    acceptor.async_accept(new_sess->socket(), boost::bind(&proxy::handle_accept, this, placeholders::error(), new_sess.get()));
+    acceptor.async_accept(new_sess->socket(), boost::bind(&proxy::handle_accept, this, placeholders::error(), new_sess.get(), boost::ref(acceptor)));
     new_sess.release();
 }
 
-void proxy::handle_accept(const boost::system::error_code& ec, session* new_session)
+void proxy::handle_accept(const boost::system::error_code& ec, session* new_session, ip::tcp::acceptor& acceptor)
 {
     std::unique_ptr<session> session_ptr(new_session);
     TRACE_ERROR(ec);
     if (ec)
         return;
 
+    start_accept(acceptor);
     start_session(session_ptr.get());
     session_ptr.release();
 }
@@ -98,7 +106,6 @@ void proxy::start_session(session* new_session)
     bool inserted = sessions.insert(new_session).second;
     assert(inserted);
     new_session->start();
-    start_accept();
     statistics::increment("total_sessions");
     statistics::increment("current_sessions");
 }
