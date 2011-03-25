@@ -4,6 +4,7 @@ import sys
 import socket
 import os.path
 import stat
+import time
 
 def print_usage():
     print 'Usage: {0} <host> <expression>'.format(sys.argv[0])
@@ -22,13 +23,14 @@ def get_stat(sock, expression):
 def get_stats(sock):
     if not os.path.exists(sock):
         return 0
+    check_time = time.time()
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.connect(sock)
     s.send('show stat\n')
     sock_file = s.makefile()
     keys = sock_file.readline()[:-1].split('\t')
     values = [eval(v) for v in sock_file.readline()[:-1].split('\t')]
-    return dict(zip(keys, values))
+    return dict(zip(keys, values) + [('time', check_time)])
 
 fastproxy_dir = '/var/run/fastproxy/'
 def get_sockets():
@@ -42,8 +44,12 @@ def main(id, expression):
     else:
         return get_stat(fastproxy_dir + id + '.sock', expression)
 
+prev_stats = None
+
 def vmain(combinations):
+    global prev_stats
     all_stats = {}
+    check_time = time.time()
     for sock,id in get_sockets():
         stats = get_stats(sock)
         all_stats[id] = stats
@@ -56,9 +62,24 @@ def vmain(combinations):
             else:
                 sum_stats[key] = value
 
+    for key, value in sum_stats.items():
+        for stats in all_stats.values():
+            if key not in stats:
+                stats[key] = 0
+
+    sum_stats['time'] = check_time
+
+    if prev_stats is None:
+        prev_stats = all_stats
     results = []
+    class Tmp(object):
+        pass
     for id,expression in combinations:
-        results.append(eval(expression, {}, all_stats[id]))
+        prev = Tmp()
+        for key, value in prev_stats[id].items():
+            setattr(prev, key, value)
+        results.append(eval(expression, {}, dict(all_stats[id].items() + [('prev', prev)])))
+    prev_stats = all_stats
     return results
 
 if __name__ == '__main__':
@@ -67,4 +88,4 @@ if __name__ == '__main__':
         sys.exit(1)
     host = sys.argv[1]
     expression = sys.argv[2]
-    print(main(host, expression))
+    print(vmain([(host, expression)])[0])
