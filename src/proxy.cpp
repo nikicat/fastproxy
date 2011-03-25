@@ -78,7 +78,6 @@ void proxy::finished_session(session* session, const boost::system::error_code& 
     if (c != 1)
         TRACE() << "erased " << c << " items. total " << sessions.size() << " items";
     assert(c == 1);
-    statistics::decrement("current_sessions");
 }
 
 void proxy::start_accept(ip::tcp::acceptor& acceptor)
@@ -106,8 +105,6 @@ void proxy::start_session(session* new_session)
     bool inserted = sessions.insert(new_session).second;
     assert(inserted);
     new_session->start();
-    statistics::increment("total_sessions");
-    statistics::increment("current_sessions");
 }
 
 void proxy::dump_channels_state() const

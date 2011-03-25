@@ -34,16 +34,17 @@ ip::tcp::socket& session::socket()
 void session::start()
 {
     timer.restart();
+    statistics::increment("total_sessions");
+    statistics::increment("current_sessions");
+    requester.set_option(asio::ip::tcp::no_delay(true));
     start_receive_header();
 }
 
 void session::finished_channel(const error_code& ec)
 {
-    opened_channels--;
     TRACE_ERROR(ec) << get_id();
-    if (opened_channels == 0)
+    if (--opened_channels == 0)
     {
-        statistics::increment("session_time", timer.elapsed());
         finish(ec ? ec : prev_ec);
     }
     else
@@ -63,6 +64,9 @@ void session::finished_channel(const error_code& ec)
 
 void session::finish(const error_code& ec)
 {
+    statistics::increment("session_time", timer.elapsed());
+    statistics::decrement("current_sessions");
+    statistics::increment("finished_sessions");
     if (ec)
     {
         statistics::increment("failed_sessions");

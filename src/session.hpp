@@ -16,6 +16,7 @@
 #include "channel.hpp"
 #include "resolver.hpp"
 #include "common.hpp"
+#include "high_resolution_timer.hpp"
 
 class proxy;
 
@@ -88,7 +89,7 @@ private:
 
     int opened_channels;
     boost::function<void (const error_code&, resolver::const_iterator, resolver::const_iterator)> resolve_handler;
-    boost::timer timer;
+    util::high_resolution_timer timer;
     error_code prev_ec;
     static logger log;
 };
