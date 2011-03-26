@@ -4,3 +4,6 @@ fastproxy.stat
 .waf*
 .cporject
 .project
+*.pyc
+.*.swp
+*~
