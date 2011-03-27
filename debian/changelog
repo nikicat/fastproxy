@@ -1,3 +1,22 @@
+fastproxy (0.2.11) lucid; urgency=low
+
+  * Added "first_input_time" statistic
+  * Added "connect_failed" statistic
+  * Do not increment "resolved_time" for failed resolve
+  * Do not increment "failed_sessions" on "conection aborted", "failed to
+    connect to server" and "resolve failed" errors
+  * Refactored error generation and handling code (now it uses boost::asio
+    error codes)
+  * Send HTTP 504 response on "failed to connect" error
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sun, 27 Mar 2011 18:36:47 +0400
+
+fastproxy (0.2.10) lucid; urgency=low
+
+  * Added "loops" statistic
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sat, 26 Mar 2011 20:37:58 +0300
+
 fastproxy (0.2.9) lucid; urgency=low
 
   * Fixes in time statistics measuring

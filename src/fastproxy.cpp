@@ -215,7 +215,17 @@ void fastproxy::run()
     s->start();
     p->start();
 
-    io.run();
+//    io.run();
+    for (;;)
+    {
+        if (io.poll() == 0)
+        {
+            if (io.run_one() == 0)
+                break;
+            statistics::increment("runs");
+        }
+        statistics::increment("loops");
+    }
 }
 
 void terminate()

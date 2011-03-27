@@ -28,7 +28,8 @@ class session;
 class channel : public boost::noncopyable
 {
 public:
-    channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session, const time_duration& input_timeout);
+    // first_input_stat: increment "first_input_time" statistic by elapse from start time
+    channel(ip::tcp::socket& input, ip::tcp::socket& output, session& parent_session, const time_duration& input_timeout, bool first_input_stat=false);
     ~channel();
 
     void start();
@@ -69,7 +70,7 @@ private:
     time_duration input_timeout;
     int pipe[2];
     long pipe_size;
-    session* parent_session;
+    session& parent_session;
     static const std::size_t size_of_operation = sizeof(asio::detail::null_buffers_op<handler_t*>);
     handler_t input_handler;
     char space_for_input_op[size_of_operation];
@@ -80,6 +81,7 @@ private:
     long splices_count;
     long bytes_count;
     state current_state;
+    bool first_input;
 
     static logger log;
 };

@@ -66,6 +66,8 @@ protected:
     void filter_headers();
 
 private:
+    friend class channel;
+
     const static std::size_t http_header_head_max_size = 4096;
     const static std::uint16_t default_http_port = 80;
 

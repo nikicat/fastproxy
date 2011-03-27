@@ -35,7 +35,7 @@ void asio_handler_invoke(Function function, handler_t** h)
 
 logger channel::log = logger(keywords::channel = "channel");
 
-channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* parent_session, const time_duration& input_timeout)
+channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session& parent_session, const time_duration& input_timeout, bool first_input_stat)
     : input(input)
     , output(output)
     , input_timer(input.io_service())
@@ -44,9 +44,8 @@ channel::channel(ip::tcp::socket& input, ip::tcp::socket& output, session* paren
     , parent_session(parent_session)
     , input_handler(boost::bind(&channel::finished_waiting_input, this, placeholders::error(), placeholders::bytes_transferred()))
     , output_handler(boost::bind(&channel::finished_waiting_output,this, placeholders::error(), placeholders::bytes_transferred()))
-    , splices_count(0)
-    , bytes_count(0)
     , current_state(created)
+    , first_input(first_input_stat)
 {
     if (pipe2(pipe, O_NONBLOCK) == -1)
     {
@@ -90,6 +89,11 @@ void channel::finished_waiting_input(const error_code& ec, std::size_t)
     if (ec)
         return finish(ec);
 
+    if (first_input)
+    {
+        first_input = false;
+        statistics::increment("first_received_time", parent_session.timer.elapsed());
+    }
     splice_from_input();
 }
 
@@ -122,7 +126,7 @@ void channel::splice_from_input()
     if (avail == 0)
     {
         TRACE() << "connection closed";
-        return finish(error_code(boost::system::errc::not_connected, boost::system::generic_category));
+        return finish(asio::error::make_error_code(asio::error::eof));
     }
     current_state = splicing_input;
 
@@ -142,12 +146,12 @@ void channel::splice_to_output()
     if (!output.is_open())
     {
         TRACE() << "socket closed";
-        return finish(error_code(boost::system::errc::not_a_socket, boost::system::generic_category));
+        return finish(asio::error::make_error_code(asio::error::not_socket));
     }
 
     current_state = splicing_output;
     long spliced;
-    error_code ec(0, boost::system::generic_category);
+    error_code ec(0, asio::error::system_category);
     splice(pipe[0], output.native(), spliced, ec);
     assert(spliced >= 0);
     pipe_size -= spliced;
@@ -175,29 +179,27 @@ void channel::start_waiting()
 
 void channel::finish(const error_code& ec)
 {
-    TRACE_ERROR(ec) << parent_session->get_id();
-    if (ec)
+    TRACE_ERROR(ec) << parent_session.get_id();
+    if (ec && ec != asio::error::operation_aborted)
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec).what();
     current_state = finished;
-    statistics::increment("total_splices", splices_count);
-    statistics::increment("total_bytes", bytes_count);
-    parent_session->finished_channel(ec);
+    parent_session.finished_channel(ec);
 }
 
 void channel::splice(int from, int to, long& spliced, error_code& ec)
 {
-    splices_count++;
+    statistics::increment("total_splices");
     spliced = ::splice(from, 0, to, 0, PIPE_SIZE, SPLICE_F_NONBLOCK | SPLICE_F_MORE | MSG_NOSIGNAL);
     if (spliced == -1)
     {
-        ec = boost::system::errc::make_error_code(static_cast<boost::system::errc::errc_t> (errno));
+        ec = asio::error::make_error_code(static_cast<asio::error::basic_errors>(errno));
         TRACE_ERROR(ec);
         spliced = 0;
 
-        if (ec == boost::system::errc::resource_unavailable_try_again)
+        if (ec == asio::error::try_again)
             ec.clear();
     }
-    bytes_count += spliced;
+    statistics::increment("total_bytes", spliced);
     TRACE() << spliced << " bytes";
 }
 

@@ -19,8 +19,8 @@ logger session::log = logger(keywords::channel = "session");
 
 session::session(asio::io_service& io, proxy& parent_proxy)
     : parent_proxy(parent_proxy), requester(io), responder(io)
-    , request_channel(requester, responder, this, parent_proxy.get_receive_timeout())
-    , response_channel(responder, requester, this, parent_proxy.get_receive_timeout())
+    , request_channel(requester, responder, *this, parent_proxy.get_receive_timeout())
+    , response_channel(responder, requester, *this, parent_proxy.get_receive_timeout(), /*first_input_stat=*/true)
     , opened_channels(2)
     , resolve_handler(boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3))
 {
@@ -45,7 +45,7 @@ void session::finished_channel(const error_code& ec)
     TRACE_ERROR(ec) << get_id();
     if (--opened_channels == 0)
     {
-        finish(ec ? ec : prev_ec);
+        finish((ec && ec != asio::error::operation_aborted && ec != asio::error::eof) ? ec : prev_ec);
     }
     else
     {
@@ -67,7 +67,7 @@ void session::finish(const error_code& ec)
     statistics::increment("session_time", timer.elapsed());
     statistics::decrement("current_sessions");
     statistics::increment("finished_sessions");
-    if (ec)
+    if (ec && ec != asio::error::eof)
     {
         statistics::increment("failed_sessions");
         BOOST_LOG_SEV(log, severity_level::error) << system_error(ec).what();
@@ -104,7 +104,6 @@ void session::start_resolving(const char* peer)
 
 void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
 {
-    statistics::increment("resolve_time", timer.elapsed());
     TRACE_ERROR(ec);
     if (ec)
     {
@@ -112,6 +111,7 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
         start_sending_error(HTTP_503);
         return;
     }
+    statistics::increment("resolve_time", timer.elapsed());
     // TODO: cycle throw all addresses
     start_connecting_to_peer(ip::tcp::endpoint(*begin, port));
 }
@@ -149,7 +149,11 @@ void session::finished_connecting_to_peer(const error_code& ec)
 {
     TRACE_ERROR(ec);
     if (ec)
-        return finish(ec);
+    {
+        statistics::increment("connect_failed");
+        start_sending_error(HTTP_504);
+        return;
+    }
     statistics::increment("connected_time", timer.elapsed());
     switch (method)
     {
