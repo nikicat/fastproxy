@@ -1,3 +1,25 @@
+fastproxy (0.2.14) lucid; urgency=low
+
+  * zbx_fastproxy: return 0 in case of zero-division
+  * 5xx pages: update fastproxy version in Via header on package build
+  * 5xx pages: update hostname in Via header on package post install configure
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Wed, 30 Mar 2011 01:16:01 +0400
+
+fastproxy (0.2.13) lucid; urgency=low
+
+  * Added "Via:" header to 5xx error pages
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Mon, 28 Mar 2011 20:40:35 +0400
+
+fastproxy (0.2.12) lucid; urgency=low
+
+  * Remove statistics socket on exit
+  * zbx_netstat: append None to results in case of error instead of raising
+    exception
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sun, 27 Mar 2011 21:08:22 +0400
+
 fastproxy (0.2.11) lucid; urgency=low
 
   * Added "first_input_time" statistic
