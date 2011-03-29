@@ -24,6 +24,7 @@ class statistics
 {
 public:
     statistics(asio::io_service& io, const local::stream_protocol::endpoint& stat_ep);
+    ~statistics();
 
     void start();
 

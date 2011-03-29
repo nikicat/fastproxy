@@ -9,6 +9,7 @@
 #include <boost/bind.hpp>
 #include <boost/date_time.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 #include "statistics.hpp"
 
@@ -29,6 +30,18 @@ statistics::statistics(asio::io_service& io, const local::stream_protocol::endpo
     : acceptor(io, stat_ep, true)
 {
     instance_ = this;
+}
+
+statistics::~statistics()
+{
+    try
+    {
+        boost::filesystem::remove(acceptor.local_endpoint().path());
+    }
+    catch (const std::exception& e)
+    {
+        BOOST_LOG_SEV(log, severity_level::warning) << e.what();
+    }
 }
 
 void statistics::start()
