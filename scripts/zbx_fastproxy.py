@@ -75,10 +75,17 @@ def vmain(combinations):
     class Tmp(object):
         pass
     for id,expression in combinations:
-        prev = Tmp()
-        for key, value in prev_stats[id].items():
-            setattr(prev, key, value)
-        results.append(eval(expression, {}, dict(all_stats[id].items() + [('prev', prev)])))
+        try:
+            prev = Tmp()
+            for key, value in prev_stats[id].items():
+                setattr(prev, key, value)
+            try:
+                result = eval(expression, {}, dict(all_stats[id].items() + [('prev', prev)]))
+            except ZeroDivisionError:
+                result = 0
+            results.append(0)
+        except:
+            results.append(None)
     prev_stats = all_stats
     return results
 
