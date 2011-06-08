@@ -5,6 +5,7 @@ import socket
 import os.path
 import stat
 import time
+import errno
 
 def print_usage():
     print 'Usage: {0} <host> <expression>'.format(sys.argv[0])
@@ -25,7 +26,12 @@ def get_stats(sock):
         return 0
     check_time = time.time()
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.connect(sock)
+    try:
+        s.connect(sock)
+    except socket.error, e:
+        if e.errno != errno.ECONNREFUSED:
+            raise
+        return {}
     s.send('show stat\n')
     sock_file = s.makefile()
     keys = sock_file.readline()[:-1].split('\t')
@@ -83,7 +89,7 @@ def vmain(combinations):
                 result = eval(expression, {}, dict(all_stats[id].items() + [('prev', prev)]))
             except ZeroDivisionError:
                 result = 0
-            results.append(0)
+            results.append(result)
         except:
             results.append(None)
     prev_stats = all_stats
