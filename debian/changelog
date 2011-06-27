@@ -1,3 +1,9 @@
+fastproxy (0.2.15) lucid; urgency=low
+
+  * allowed header X-Yandex-Antivirus 
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Mon, 27 Jun 2011 15:52:29 +0400
+
 fastproxy (0.2.14) lucid; urgency=low
 
   * zbx_fastproxy: return 0 in case of zero-division
