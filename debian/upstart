@@ -6,5 +6,6 @@ limit nofile 65536 65536
 instance $ARGS
 script
 	CONF_ARGS="`sed -e 's/^/ --/' /etc/fastproxy.conf | tr -d '\n'`"
+	[ -d /var/run/fastproxy ] || mkdir /var/run/fastproxy
 	exec /usr/bin/fastproxy $ARGS $CONF_ARGS --stop-after-init=1
 end script
