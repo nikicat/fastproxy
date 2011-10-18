@@ -21,6 +21,7 @@ override_dh_auto_install:
 	for file in `ls $(ERRORDIR)`; do \
 		sed -i"" 's/VERSION/$(VERSION)/' $(ERRORDIR)/$$file; \
 	done
+	dh_installinit --upstart-only -n
 
 override_dh_clean:
 	dh_clean
