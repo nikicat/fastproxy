@@ -156,9 +156,20 @@ void fastproxy::init_statistics()
     const std::string& stat_sock = vm["ingoing-stat"].as<std::string>();
     boost::filesystem::remove(stat_sock);
     s.reset(new statistics(io, stat_sock));
-    int res = chown(stat_sock.c_str(),
-        getpwnam(vm["stat-socket-user"].as<std::string>().c_str())->pw_uid,
-        getgrnam(vm["stat-socket-group"].as<std::string>().c_str())->gr_gid);
+    errno = 0;
+    passwd* pwnam = getpwnam(vm["stat-socket-user"].as<std::string>().c_str());
+    if (!pwnam)
+    {
+        perror(("could not find user " + vm["stat-socket-user"].as<std::string>()).c_str());
+        exit(1);
+    }
+    group* grnam = getgrnam(vm["stat-socket-group"].as<std::string>().c_str());
+    if (!grnam)
+    {
+        perror(("could not find group " + vm["stat-socket-group"].as<std::string>()).c_str());
+        exit(1);
+    }
+    int res = chown(stat_sock.c_str(), pwnam->pw_uid, grnam->gr_gid);
     if (res != 0)
         perror(("chown(" + stat_sock + ", " + vm["stat-socket-user"].as<std::string>() + ", " + vm["stat-socket-group"].as<std::string>() + ")").c_str());
 }
