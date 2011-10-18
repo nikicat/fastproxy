@@ -1,3 +1,16 @@
+fastproxy (0.2.16ubuntu2) natty; urgency=low
+
+  * Upstart: create /var/run/fastproxy if not exist on start
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sun, 10 Jul 2011 14:42:20 +0400
+
+fastproxy (0.2.16) natty; urgency=low
+
+  * Rebuilt for Natty
+  * Fixed SIGSEGV on unexistent group/user for statistics socket
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Thu, 07 Jul 2011 03:29:04 +0400
+
 fastproxy (0.2.15) lucid; urgency=low
 
   * allowed header X-Yandex-Antivirus 
