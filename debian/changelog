@@ -1,3 +1,9 @@
+fastproxy (0.2.17ubuntu1) natty; urgency=low
+
+  * Config: allow X-Requested-With request header
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Tue, 25 Oct 2011 17:03:01 +0400
+
 fastproxy (0.2.16ubuntu2) natty; urgency=low
 
   * Upstart: create /var/run/fastproxy if not exist on start
