@@ -2,7 +2,7 @@ Source: fastproxy
 Section: misc
 Priority: extra
 Maintainer: Nikolay Bryskin <nbryskin@yandex-team.ru>
-Build-Depends: debhelper (>= 7.0.50~), libudns-dev, libboost-log1.43-dev, libboost1.43-dev
+Build-Depends: debhelper (>= 7.0.50~), libudns-dev, libboost1.43-all-dev, python (>= 2.6)
 Standards-Version: 3.9.1
 Homepage: http://git.yandex.ru/nbryskin/fastproxy.git
 
