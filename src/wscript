@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 def configure(conf):
-	conf.env.LIB_BOOST      = ['boost_program_options', 'boost_system', 'boost_log', 'boost_log_setup', 'pthread']
+	conf.env.LIB_BOOST      = ['boost_program_options', 'boost_system', 'boost_log', 'boost_log_setup', 'pthread', 'boost_filesystem']
 	conf.env.LIB_UDNS       = ['udns']
 	conf.env.LIB_RT         = ['rt']
 	conf.env.LIBPATH_BOOST  = ['/usr/local/lib64']
