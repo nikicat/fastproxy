@@ -47,10 +47,10 @@ public:
     {
         for (const char *l = lhs.begin, *r = rhs.begin; l != lhs.end && r != rhs.end; l++, r++)
         {
-            if (*l < *r)
+            if (tolower(*l) < tolower(*r))
                 return true;
 
-            if (*l > *r)
+            if (tolower(*l) > tolower(*r))
                 break;
         }
 

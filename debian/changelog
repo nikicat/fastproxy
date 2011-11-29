@@ -1,3 +1,27 @@
+fastproxy (0.2.18ubuntu1) oneiric; urgency=low
+
+  * Fix: compare HTTP headers case-insensitive
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Tue, 29 Nov 2011 19:20:09 +0400
+
+fastproxy (0.2.17ubuntu4) oneiric; urgency=low
+
+  * Boost build dependency changed to libboost-all-dev
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Fri, 11 Nov 2011 21:18:22 +0400
+
+fastproxy (0.2.17ubuntu3) oneiric; urgency=low
+
+  * Added boost-filesystem linker dependency
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Fri, 11 Nov 2011 21:10:54 +0400
+
+fastproxy (0.2.17ubuntu2) oneiric; urgency=low
+
+  * Rebuild for Oneiric
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Fri, 11 Nov 2011 20:02:15 +0400
+
 fastproxy (0.2.17ubuntu1) natty; urgency=low
 
   * Config: allow X-Requested-With request header
