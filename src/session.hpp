@@ -45,6 +45,9 @@ protected:
     void start_resolving(const char* peer);
     void finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end);
 
+    void start_waiting_connect_timer();
+    void finished_waiting_connect_timer(const error_code& ec);
+
     void start_sending_error(http_error_code httpec);
     void finished_sending_error(const error_code& ec, std::size_t bytes_transferred);
 
@@ -94,6 +97,8 @@ private:
     util::high_resolution_timer timer;
     error_code prev_ec;
     static logger log;
+    const time_duration connect_timeout;
+    asio::deadline_timer connect_timer;
 };
 
 typedef boost::shared_ptr<session> session_ptr;

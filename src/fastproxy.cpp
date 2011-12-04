@@ -58,6 +58,7 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("log-level", po::value<int>()->default_value(2), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
             ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
+            ("connect-timeout", po::value<time_duration::sec_type>()->default_value(3), "timeout for connect operation (in seconds)")
             ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests")
             ("stat-socket-user", po::value<std::string>()->default_value(getpwuid(getuid())->pw_name), "user for statistics socket")
             ("stat-socket-group", po::value<std::string>()->default_value(getgrgid(getgid())->gr_name), "group for statistics socket")
@@ -181,6 +182,7 @@ void fastproxy::init_proxy()
             vm["outgoing-ns"].as<ip::udp::endpoint>(),
             vm["name-server"].as<ip::udp::endpoint>(),
             boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>()),
+            boost::posix_time::seconds(vm["connect-timeout"].as<time_duration::sec_type>()),
             vm["allow-header"].as<string_vec>(),
             vm["error-page-dir"].as<std::string>()));
 }

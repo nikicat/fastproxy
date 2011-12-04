@@ -21,7 +21,8 @@ class proxy : public boost::noncopyable
 public:
     proxy(asio::io_service& io, std::vector<ip::tcp::endpoint> inbound, const ip::tcp::endpoint& outbound_http,
           const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server,
-          const time_duration& receive_timeout, const std::vector<std::string>& allowed_headers,
+          const time_duration& receive_timeout, const time_duration& connect_timeout, 
+	  const std::vector<std::string>& allowed_headers,
           std::string error_pages_dir);
 
     // called by main (parent)
@@ -35,6 +36,7 @@ public:
 
     const ip::tcp::endpoint& get_outgoing_endpoint() const;
     const time_duration& get_receive_timeout() const;
+    const time_duration& get_connect_timeout() const;
 
     void dump_channels_state() const;
 
@@ -55,6 +57,7 @@ private:
     resolver resolver_;
     ip::tcp::endpoint outbound_http;
     time_duration receive_timeout;
+    time_duration connect_timeout;
     session_cont sessions;
     headers_type allowed_headers;
     std::vector<std::string> headers_cont;

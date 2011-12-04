@@ -23,6 +23,8 @@ session::session(asio::io_service& io, proxy& parent_proxy)
     , response_channel(responder, requester, *this, parent_proxy.get_receive_timeout(), /*first_input_stat=*/true)
     , opened_channels(2)
     , resolve_handler(boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3))
+    , connect_timeout(parent_proxy.get_connect_timeout())
+    , connect_timer(io)
 {
 }
 
@@ -114,6 +116,23 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
     statistics::increment("resolve_time", timer.elapsed());
     // TODO: cycle throw all addresses
     start_connecting_to_peer(ip::tcp::endpoint(*begin, port));
+    start_waiting_connect_timer();
+}
+
+void session::start_waiting_connect_timer()
+{
+    TRACE();
+    connect_timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, connect_timeout.seconds()));
+    connect_timer.async_wait(boost::bind(&session::finished_waiting_connect_timer, this, placeholders::error));
+}
+
+void session::finished_waiting_connect_timer(const error_code& ec)
+{
+    TRACE_ERROR(ec);
+    if (ec)
+        return;
+
+    responder.cancel();
 }
 
 void session::start_sending_error(http_error_code httpec)
@@ -148,6 +167,7 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 void session::finished_connecting_to_peer(const error_code& ec)
 {
     TRACE_ERROR(ec);
+    connect_timer.cancel();
     if (ec)
     {
         statistics::increment("connect_failed");
