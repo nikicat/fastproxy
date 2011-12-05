@@ -24,14 +24,15 @@ bool session_less(const session& lhs, const session& rhs)
 }
 
 proxy::proxy(asio::io_service& io, std::vector<ip::tcp::endpoint> inbound, const ip::tcp::endpoint& outbound_http,
-             const ip::udp::endpoint& outbound_ns, const ip::udp::endpoint& name_server,
+             const ip::udp::endpoint& outbound_ns,
              const time_duration& receive_timeout, const time_duration& connect_timeout,
-	     const std::vector<std::string>& allowed_headers,
+             const time_duration& resolve_timeout, const std::vector<std::string>& allowed_headers,
              const std::string error_pages_dir)
-    : resolver_(io, outbound_ns, name_server)
+    : resolver_(io, outbound_ns)
     , outbound_http(outbound_http)
     , receive_timeout(receive_timeout)
     , connect_timeout(connect_timeout)
+    , resolve_timeout(resolve_timeout)
     , sessions(std::ptr_fun(session_less))
     , headers_cont(allowed_headers)
 {
@@ -134,6 +135,11 @@ const time_duration& proxy::get_receive_timeout() const
 const time_duration& proxy::get_connect_timeout() const
 {
     return connect_timeout;
+}
+
+const time_duration& proxy::get_resolve_timeout() const
+{
+    return resolve_timeout;
 }
 
 const headers_type& proxy::get_allowed_headers() const

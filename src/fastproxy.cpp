@@ -54,11 +54,11 @@ void fastproxy::parse_config(int argc, char* argv[])
             ("ingoing-stat", po::value<std::string>()->required(), "statistics listening socket")
             ("outgoing-http", po::value<ip::tcp::endpoint>()->default_value(ip::tcp::endpoint()), "outgoing address for HTTP requests")
             ("outgoing-ns", po::value<ip::udp::endpoint>()->default_value(ip::udp::endpoint()), "outgoing address for NS lookup")
-            ("name-server", po::value<ip::udp::endpoint>()->required(), "name server address")
             ("log-level", po::value<int>()->default_value(2), "logging level")
             ("log-channel", po::value<string_vec>(), "logging channel")
             ("receive-timeout", po::value<time_duration::sec_type>()->default_value(3600), "timeout for receive operations (in seconds)")
             ("connect-timeout", po::value<time_duration::sec_type>()->default_value(3), "timeout for connect operation (in seconds)")
+            ("resolve-timeout", po::value<time_duration::sec_type>()->default_value(3), "timeout for resolve operation (in seconds)")
             ("allow-header", po::value<string_vec>()->default_value(string_vec(), "any"), "allowed header for requests")
             ("stat-socket-user", po::value<std::string>()->default_value(getpwuid(getuid())->pw_name), "user for statistics socket")
             ("stat-socket-group", po::value<std::string>()->default_value(getgrgid(getgid())->gr_name), "group for statistics socket")
@@ -180,16 +180,11 @@ void fastproxy::init_proxy()
     p.reset(new proxy(io, vm["ingoing-http"].as<endpoint_vec>(),
             vm["outgoing-http"].as<ip::tcp::endpoint>(),
             vm["outgoing-ns"].as<ip::udp::endpoint>(),
-            vm["name-server"].as<ip::udp::endpoint>(),
             boost::posix_time::seconds(vm["receive-timeout"].as<time_duration::sec_type>()),
             boost::posix_time::seconds(vm["connect-timeout"].as<time_duration::sec_type>()),
+            boost::posix_time::seconds(vm["resolve-timeout"].as<time_duration::sec_type>()),
             vm["allow-header"].as<string_vec>(),
             vm["error-page-dir"].as<std::string>()));
-}
-
-void fastproxy::init_resolver()
-{
-    resolver::init();
 }
 
 template<class stream_type, class protocol>
@@ -213,7 +208,6 @@ void fastproxy::init(int argc, char* argv[])
 {
     parse_config(argc, argv);
     init_logging();
-    init_resolver();
     init_signals();
 
     init_statistics();

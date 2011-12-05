@@ -24,7 +24,9 @@ session::session(asio::io_service& io, proxy& parent_proxy)
     , opened_channels(2)
     , resolve_handler(boost::bind(&session::finished_resolving, this, placeholders::error(), _2, _3))
     , connect_timeout(parent_proxy.get_connect_timeout())
-    , connect_timer(io)
+    , resolve_timeout(parent_proxy.get_resolve_timeout())
+    , timeout_timer(io)
+    , resolveid()
 {
 }
 
@@ -101,12 +103,32 @@ void session::finished_receive_header(const error_code& ec, std::size_t bytes_tr
 void session::start_resolving(const char* peer)
 {
     TRACE() << peer << ":" << port;
-    parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
+    resolveid = parent_proxy.get_resolver().async_resolve(peer, resolve_handler);
+    start_waiting_resolve_timer();
 }
 
-void session::finished_resolving(const error_code& ec, resolver::const_iterator begin, resolver::const_iterator end)
+void session::start_waiting_resolve_timer()
+{
+    TRACE();
+    timeout_timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, resolve_timeout.seconds()));
+    timeout_timer.async_wait(boost::bind(&session::finished_waiting_resolve_timer, this, placeholders::error));
+}
+
+void session::finished_waiting_resolve_timer(const error_code& ec)
 {
     TRACE_ERROR(ec);
+    if (ec)
+        return;
+
+    if (parent_proxy.get_resolver().cancel(resolveid) == 0) {
+        finished_resolving(boost::system::errc::make_error_code(boost::system::errc::timed_out), 0, 0);
+    }
+}
+
+void session::finished_resolving(const error_code& ec, resolver::iterator begin, resolver::iterator end)
+{
+    TRACE_ERROR(ec);
+    timeout_timer.cancel();
     if (ec)
     {
         statistics::increment("resolve_failed");
@@ -122,8 +144,8 @@ void session::finished_resolving(const error_code& ec, resolver::const_iterator 
 void session::start_waiting_connect_timer()
 {
     TRACE();
-    connect_timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, connect_timeout.seconds()));
-    connect_timer.async_wait(boost::bind(&session::finished_waiting_connect_timer, this, placeholders::error));
+    timeout_timer.expires_from_now(asio::deadline_timer::duration_type(0, 0, connect_timeout.seconds()));
+    timeout_timer.async_wait(boost::bind(&session::finished_waiting_connect_timer, this, placeholders::error));
 }
 
 void session::finished_waiting_connect_timer(const error_code& ec)
@@ -167,7 +189,7 @@ void session::start_connecting_to_peer(const ip::tcp::endpoint& peer)
 void session::finished_connecting_to_peer(const error_code& ec)
 {
     TRACE_ERROR(ec);
-    connect_timer.cancel();
+    timeout_timer.cancel();
     if (ec)
     {
         statistics::increment("connect_failed");
