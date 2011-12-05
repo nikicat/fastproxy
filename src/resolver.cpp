@@ -17,12 +17,12 @@ resolver::resolver(asio::io_service& io, const ip::udp::endpoint& outbound)
     : socket(io)
     , context(ub_ctx_create())
 {
-	if(!context)
-		throw ub_create_error();
+    if(!context)
+        throw ub_create_error();
 
-	ub_ctx_set_option(context, const_cast<char*>("outgoing-interface:"), const_cast<char*>(outbound.address().to_string().c_str()));
-	int fd = ub_fd(context);
-	socket.assign(ip::udp::v4(), fd);
+    ub_ctx_set_option(context, const_cast<char*>("outgoing-interface:"), const_cast<char*>(outbound.address().to_string().c_str()));
+    int fd = ub_fd(context);
+    socket.assign(ip::udp::v4(), fd);
 }
 
 resolver::~resolver()
@@ -38,12 +38,12 @@ void resolver::start()
 int resolver::async_resolve(const char* host_name, const callback& completion)
 {
     TRACE() << host_name;
-	int asyncid = 0;
-	int retval = ub_resolve_async(context, const_cast<char*>(host_name),
-		1 /* TYPE A (IPv4 address) */, 
-		1 /* CLASS IN (internet) */, 
-		const_cast<callback*>(&completion), &resolver::finished_resolve_raw, &asyncid);
-	if(retval != 0)
+    int asyncid = 0;
+    int retval = ub_resolve_async(context, const_cast<char*>(host_name),
+        1 /* TYPE A (IPv4 address) */, 
+        1 /* CLASS IN (internet) */, 
+        const_cast<callback*>(&completion), &resolver::finished_resolve_raw, &asyncid);
+    if(retval != 0)
         completion(boost::system::error_code(retval, boost::system::get_generic_category()), 0, 0);
     return asyncid;
 }
@@ -75,29 +75,29 @@ void resolver::finished_resolve_raw(void* data, int status, ub_result* result)
     const callback& completion = *static_cast<const callback*>(data);
 
     finished_resolve(status, result, completion);
-	ub_resolve_free(result);
+    ub_resolve_free(result);
 }
 
 void resolver::finished_resolve(int status, ub_result* result, const callback& completion)
 {
     TRACE() << status;
-	iterator begin, end;
-	boost::system::error_code ec;
-	if (status == 0)
-	{
-		if (result->havedata)
-		{
-			begin = result->data;
-			for (end = begin; end; ++end);
-		}
-		else
-		{
-			ec = boost::system::error_code(result->rcode, boost::system::get_generic_category());
-		}
-	}
-	else
-	{
-		ec = boost::system::error_code(status, boost::system::get_generic_category());
-	}
+    iterator begin, end;
+    boost::system::error_code ec;
+    if (status == 0)
+    {
+        if (result->havedata)
+        {
+            begin = result->data;
+            for (end = begin; end; ++end);
+        }
+        else
+        {
+            ec = boost::system::error_code(result->rcode ? result->rcode : boost::system::errc::operation_canceled, boost::system::get_generic_category());
+        }
+    }
+    else
+    {
+        ec = boost::system::error_code(status, boost::system::get_generic_category());
+    }
     completion(ec, begin, end);
 }
