@@ -21,24 +21,12 @@ resolver::resolver(asio::io_service& io, const ip::udp::endpoint& outbound)
     if(!context)
         throw ub_create_error();
 
-    if (ub_ctx_set_option(context, const_cast<char*>("outgoing-interface:"), const_cast<char*>(outbound.address().to_string().c_str())))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("msg-cache-size:"), "0"))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("rrset-cache-size:"), "0"))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("key-cache-size:"), "0"))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("use-syslog:"), "yes"))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("module-config:"), "iterator"))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("verbosity:"), "1"))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("outgoing-range:"), "4096"))
-        throw ub_config_error();
-    if (ub_ctx_set_option(context, const_cast<char*>("num-queries-per-thread:"), "4096"))
-        throw ub_config_error();
+    if (ub_ctx_set_option(context, const_cast<char*>("outgoing-interface:"), const_cast<char*>(outbound.address().to_string().c_str()))) throw ub_config_error();
+    if (ub_ctx_set_option(context, const_cast<char*>("use-syslog:"), const_cast<char*>("yes"))) throw ub_config_error();
+    if (ub_ctx_set_option(context, const_cast<char*>("module-config:"), const_cast<char*>("iterator"))) throw ub_config_error();
+    if (ub_ctx_set_option(context, const_cast<char*>("verbosity:"), const_cast<char*>("1"))) throw ub_config_error();
+    if (ub_ctx_set_option(context, const_cast<char*>("outgoing-range:"), const_cast<char*>("4096"))) throw ub_config_error();
+    if (ub_ctx_set_option(context, const_cast<char*>("num-queries-per-thread:"), const_cast<char*>("4096"))) throw ub_config_error();
     int fd = ub_fd(context);
     socket.assign(ip::udp::v4(), fd);
 }
