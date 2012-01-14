@@ -1,3 +1,9 @@
+fastproxy (0.3.1) oneiric; urgency=low
+
+  * Added usefull options for libunbound
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Thu, 08 Dec 2011 01:14:52 +0400
+
 fastproxy (0.3.0) oneiric; urgency=low
 
   * Migrated to libunbound recursive resolver
