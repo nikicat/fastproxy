@@ -1,3 +1,11 @@
+fastproxy (0.3.2) oneiric; urgency=low
+
+  * Changed HTTP error codes:
+    - 550: could not resolve target host name
+    - 551: could not connect to target host
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Sat, 14 Jan 2012 23:11:28 +0400
+
 fastproxy (0.3.1) oneiric; urgency=low
 
   * Added usefull options for libunbound

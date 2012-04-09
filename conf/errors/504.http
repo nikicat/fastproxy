@@ -1,10 +1,10 @@
-HTTP/1.0 504 Gateway Time-out
+HTTP/1.0 551 Gateway Time-out
 Cache-Control: no-cache
 Connection: close
 Content-Type: text/html
 Via: HOSTNAME (fastproxy VERSION)
 
-<html><body><h1>504 Gateway Time-out</h1>
+<html><body><h1>551 Gateway Time-out</h1>
 Could not connect to target host.
 </body></html>
 
