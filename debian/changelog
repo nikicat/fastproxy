@@ -1,3 +1,15 @@
+fastproxy (0.3.2ubuntu2) precise; urgency=low
+
+  * Rebuild for Precise
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Thu, 28 Jun 2012 17:02:23 +0400
+
+fastproxy (0.3.2ubuntu1) natty; urgency=low
+
+  * Rebuild for Natty
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Mon, 09 Apr 2012 23:08:27 +0400
+
 fastproxy (0.3.2) oneiric; urgency=low
 
   * Changed HTTP error codes:
