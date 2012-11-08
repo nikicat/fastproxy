@@ -3,6 +3,7 @@
 import sys
 import socket
 import os.path
+import os
 import stat
 import time
 import errno
@@ -36,7 +37,7 @@ def get_stats(sock):
     sock_file = s.makefile()
     keys = sock_file.readline()[:-1].split('\t')
     values = [eval(v) for v in sock_file.readline()[:-1].split('\t')]
-    return dict(zip(keys, values) + [('time', check_time)])
+    return dict(zip(keys, values) + [('time', check_time), ('start_time', os.stat(sock).st_ctime)])
 
 fastproxy_dir = '/var/run/fastproxy/'
 def get_sockets():
@@ -77,6 +78,11 @@ def vmain(combinations):
 
     if prev_stats is None:
         prev_stats = all_stats
+    else:
+        for id, stats in prev_stats.items():
+            if stats['start_time'] < all_stats[id]['start_time']:
+                stats = all_stats[id]
+
     results = []
     class Tmp(object):
         pass
