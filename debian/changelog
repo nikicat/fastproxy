@@ -1,3 +1,9 @@
+fastproxy (0.4) precise; urgency=low
+
+  * Zabbix script fix: handle fastproxy restarts
+
+ -- Nikolay Bryskin <nbryskin@yandex-team.ru>  Mon, 27 Aug 2012 04:44:50 +0400
+
 fastproxy (0.3.2ubuntu2) precise; urgency=low
 
   * Rebuild for Precise
